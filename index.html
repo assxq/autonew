@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프롬프트 슬레이트 · 스튜디오</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#0d1320;--bg-raise:#141d30;--bg-card:#18233b;
+    --ink:#eaf0fb;--ink-dim:#8595b5;--ink-faint:#566179;
+    --navy:#2b4a86;--amber:#e0a352;--amber-bright:#f4bd6e;--green:#5dbb8a;--red:#e8836f;--cyan:#6fc3e6;
+    --line:#243150;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --disp:'Space Grotesk','Noto Sans KR',sans-serif;
+    --body:'Noto Sans KR','Space Grotesk',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:radial-gradient(1200px 600px at 50% -10%, #1a2640 0%, transparent 60%),var(--bg);color:var(--ink);font-family:var(--body);display:flex;flex-direction:column;min-height:100vh;-webkit-font-smoothing:antialiased}
+  .wrap{width:100%;max-width:900px;margin:0 auto;padding:26px 22px 50px;flex:1;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px}
+  .brand{display:flex;align-items:center;gap:11px}
+  .slate{width:30px;height:24px;border-radius:3px;position:relative;overflow:hidden;background:var(--ink);flex:none;box-shadow:0 2px 8px #0006}
+  .slate::before{content:"";position:absolute;inset:0;top:7px;background:var(--bg)}
+  .slate::after{content:"";position:absolute;top:0;left:0;right:0;height:7px;background:repeating-linear-gradient(115deg,var(--ink) 0 5px,#0d1320 5px 10px)}
+  .brand h1{font-family:var(--disp);font-size:17px;font-weight:700;letter-spacing:.3px}
+  .brand span{display:block;font-size:11px;color:var(--ink-faint);font-family:var(--mono);letter-spacing:.5px;margin-top:1px}
+  .hdr-btns{display:flex;gap:8px}
+  .btn-ghost{font-family:var(--mono);font-size:12px;color:var(--ink-dim);background:transparent;border:1px solid var(--line);border-radius:7px;padding:8px 13px;cursor:pointer;transition:.15s}
+  .btn-ghost:hover{color:var(--ink);border-color:var(--amber)}
+
+  .drop{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px dashed var(--line);border-radius:18px;text-align:center;padding:50px 30px;transition:.2s;background:var(--bg-raise);cursor:pointer}
+  .drop.over{border-color:var(--amber);background:#16213a}
+  .drop .ic{font-size:38px;margin-bottom:18px}
+  .drop h2{font-family:var(--disp);font-weight:500;font-size:21px;margin-bottom:9px}
+  .drop p{color:var(--ink-dim);font-size:14px;line-height:1.7;max-width:460px}
+  .drop .formats{margin-top:18px;font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+  .drop .pick{margin-top:22px;display:inline-block;background:var(--amber);color:#1a1206;font-weight:700;font-family:var(--disp);font-size:14px;padding:11px 22px;border-radius:9px}
+
+  .player{display:none;flex-direction:column;flex:1}
+  .player.on{display:flex}
+  .autobar{display:flex;align-items:center;gap:10px;background:var(--bg-raise);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:14px;flex-wrap:wrap}
+  .autobar .lead{font-family:var(--mono);font-size:12px;color:var(--ink-dim);flex:1;line-height:1.5;min-width:160px}
+  .autobar .lead b{color:var(--amber-bright)}
+  .btn-run{font-family:var(--disp);font-weight:700;font-size:13px;border:none;border-radius:9px;padding:10px 14px;cursor:pointer;background:var(--navy);color:#fff;transition:.15s;white-space:nowrap}
+  .btn-run:hover{background:#345aa3}
+  .btn-run.stop{background:var(--red);color:#2a0d07}
+  .btn-run:disabled{opacity:.4;cursor:default}
+  .btn-run.exp{background:var(--green);color:#04210f}
+  .btn-run.exp:hover{background:#74d4a0}
+
+  .strip-row{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .strip{flex:1;display:flex;gap:3px;height:16px;overflow-x:auto;border-radius:3px}
+  .strip::-webkit-scrollbar{height:0}
+  .frame{flex:1 0 auto;min-width:5px;background:var(--line);border-radius:1px;transition:.25s;cursor:pointer;position:relative}
+  .frame:hover{opacity:.65}
+  .frame.img{background:var(--navy)}
+  .frame.aud::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--cyan);border-radius:1px}
+  .frame.cur{outline:2px solid var(--amber);outline-offset:1px}
+  .count{font-family:var(--mono);font-size:13px;color:var(--ink-dim);white-space:nowrap;display:flex;align-items:center;gap:4px}
+  .count #jump{width:46px;background:#0c1322;border:1px solid var(--line);border-radius:6px;color:var(--amber-bright);font-family:var(--mono);font-size:17px;font-weight:500;text-align:center;padding:3px 2px}
+  .count #jump:focus{outline:none;border-color:var(--amber)}
+
+  .card{background:linear-gradient(180deg,var(--bg-card),#131d32);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:14px;flex:1;display:flex;flex-direction:column;box-shadow:0 18px 50px -28px #000a}
+  .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .cut-id{font-family:var(--mono);font-weight:500;font-size:26px}
+  .cut-id em{color:var(--amber);font-style:normal}
+  .tag{font-family:var(--mono);font-size:11px;padding:4px 9px;border-radius:20px}
+  .tag.anchor{background:#3a2c10;color:var(--amber-bright)}
+  .tag.derive{background:#10293a;color:var(--cyan)}
+  .tag.solo{background:#1d2740;color:var(--ink-dim)}
+  .tag.era{background:#2a1430;color:#d690d6}
+  .tag.ref{background:#13301f;color:var(--green)}
+
+  /* narration block */
+  .narr{background:#0c1322;border:1px solid var(--line);border-radius:11px;padding:13px 15px;margin-bottom:12px}
+  .narr .ntop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .narr .nlabel{font-family:var(--mono);font-size:10px;color:var(--cyan);letter-spacing:.5px}
+  .narr .ntext{font-size:14px;line-height:1.75;color:#dbe6fb;white-space:pre-wrap;max-height:120px;overflow-y:auto}
+  .narr .ntext.empty{color:var(--ink-faint);font-style:italic}
+  .narr .nbtns{display:flex;align-items:center;gap:8px;margin-top:10px}
+  .btn-tts{font-family:var(--disp);font-weight:700;font-size:12px;border:none;border-radius:8px;padding:8px 13px;cursor:pointer;background:var(--cyan);color:#04202b;transition:.15s;white-space:nowrap}
+  .btn-tts:hover{background:#8ad3f0}
+  .btn-tts:disabled{opacity:.5;cursor:default}
+  .btn-tts.busy{background:var(--ink-faint);color:#0d1320}
+  .narr audio{height:30px;flex:1;min-width:80px}
+  .dur{font-family:var(--mono);font-size:12px;color:var(--amber-bright);white-space:nowrap}
+
+  .stage{display:flex;gap:12px;flex:1;min-height:0}
+  @media(max-width:640px){.stage{flex-direction:column}}
+  .prompt-box{flex:1;background:#0c1322;border:1px solid var(--line);border-radius:11px;padding:15px;font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#cdd8ee;overflow-y:auto;white-space:pre-wrap;word-break:break-word;min-height:110px;user-select:text}
+  .prompt-box::-webkit-scrollbar,.narr .ntext::-webkit-scrollbar{width:7px}
+  .prompt-box::-webkit-scrollbar-thumb,.narr .ntext::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+  .preview{flex:1;border:1px solid var(--line);border-radius:11px;background:#0c1322 repeating-linear-gradient(45deg,#0e1626 0 10px,#0c1322 10px 20px);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;min-height:120px}
+  .preview img{width:100%;height:100%;object-fit:contain;display:block}
+  .preview .ph{color:var(--ink-faint);font-family:var(--mono);font-size:12px;text-align:center;padding:18px;line-height:1.6}
+  .preview .spin{position:absolute;width:32px;height:32px;border:3px solid #ffffff22;border-top-color:var(--amber);border-radius:50%;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .preview .dl{position:absolute;right:8px;bottom:8px;background:#0d1320cc;border:1px solid var(--line);border-radius:7px;color:var(--ink);font-family:var(--mono);font-size:11px;padding:5px 9px;cursor:pointer;text-decoration:none;backdrop-filter:blur(4px)}
+
+  .controls{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
+  .btn{font-family:var(--disp);font-weight:700;font-size:13px;cursor:pointer;border:none;border-radius:11px;padding:13px 14px;transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px}
+  .btn:active{transform:translateY(1px)}
+  .btn-prev{background:var(--bg-raise);color:var(--ink-dim);border:1px solid var(--line);width:74px;flex:none}
+  .btn-prev:hover:not(:disabled){color:var(--ink)}
+  .btn-prev:disabled{opacity:.35;cursor:default}
+  .btn-copy{background:var(--bg-raise);color:var(--ink);border:1px solid var(--line);flex:1}
+  .btn-copy:hover{border-color:var(--amber)}
+  .btn-copy.copied{background:var(--green);color:#04210f;border-color:var(--green)}
+  .btn-gen{background:var(--amber);color:#1a1206;flex:1.3}
+  .btn-gen:hover{background:var(--amber-bright)}
+  .btn-gen.busy{background:var(--ink-faint);color:#0d1320}
+  .hint{text-align:center;margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+  .hint kbd{background:var(--bg-raise);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--ink-dim);margin:0 1px}
+
+  details.panel{margin-top:14px;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  details.panel summary{cursor:pointer;list-style:none;padding:12px 16px;font-family:var(--mono);font-size:12px;color:var(--ink-dim);display:flex;justify-content:space-between;background:var(--bg-raise)}
+  details.panel summary::-webkit-details-marker{display:none}
+  details.panel summary:hover{color:var(--ink)}
+  details.panel[open] summary{border-bottom:1px solid var(--line)}
+  .panel .body{padding:14px 16px}
+  .panel .body .lbl{color:var(--amber);font-family:var(--mono);font-size:11px;display:block;margin:12px 0 4px}
+  .panel .body .lbl:first-child{margin-top:0}
+  .panel .body .txt{font-family:var(--mono);font-size:11.5px;line-height:1.7;color:var(--ink-faint);white-space:pre-wrap}
+
+  .gallery{margin-top:16px}
+  .gallery h3{font-family:var(--disp);font-size:13px;color:var(--ink-dim);font-weight:500;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+  .cell{aspect-ratio:16/9;border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative;background:#0c1322;cursor:pointer}
+  .cell img{width:100%;height:100%;object-fit:cover}
+  .cell .lab{position:absolute;left:0;bottom:0;background:#0d1320cc;color:var(--ink);font-family:var(--mono);font-size:10px;padding:2px 6px;border-top-right-radius:6px}
+  .cell .au{position:absolute;right:3px;top:3px;font-size:10px}
+
+  .modal{position:fixed;inset:0;background:#070b14cc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+  .modal.on{display:flex}
+  .sheet{width:100%;max-width:460px;background:var(--bg-card);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 30px 80px -20px #000;max-height:90vh;overflow-y:auto}
+  .sheet h2{font-family:var(--disp);font-size:18px;margin-bottom:4px}
+  .sheet .desc{color:var(--ink-dim);font-size:12.5px;line-height:1.6;margin-bottom:16px}
+  .seg-title{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.5px;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .seg-title:first-of-type{margin-top:6px}
+  .keybtn{float:right;font-family:var(--mono);font-size:10px;color:#1a1206;background:var(--amber);border-radius:6px;padding:3px 8px;text-decoration:none;font-weight:700;letter-spacing:.2px}
+  .keybtn:hover{background:var(--amber-bright)}
+
+  .tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+  .tab{font-family:var(--disp);font-weight:500;font-size:14px;color:var(--ink-faint);background:none;border:none;border-bottom:2px solid transparent;padding:11px 16px;cursor:pointer;transition:.15s;margin-bottom:-1px}
+  .tab:hover{color:var(--ink-dim)}
+  .tab.active{color:var(--amber-bright);border-bottom-color:var(--amber)}
+
+  .writepane{display:flex;flex-direction:column;gap:16px}
+  .wp-row input{width:100%;background:var(--bg-raise);border:1px solid var(--line);border-radius:12px;color:var(--ink);font-family:var(--body);font-size:15px;padding:15px 17px}
+  .wp-row input:focus{outline:none;border-color:var(--amber)}
+  .genres{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .genre{display:flex;flex-direction:column;gap:3px;text-align:left;background:var(--bg-raise);border:1px solid var(--line);border-radius:11px;padding:11px 13px;cursor:pointer;transition:.15s}
+  .genre:hover{border-color:var(--ink-faint)}
+  .genre.sel{border-color:var(--amber);background:#1a2336}
+  .genre .g-top{font-family:var(--body);font-weight:700;font-size:13px;color:var(--ink)}
+  .genre .g-hint{font-family:var(--mono);font-size:10px;color:var(--ink-faint);line-height:1.4}
+  .wp-controls{display:flex;gap:10px;align-items:center}
+  .wp-model select{background:var(--bg-raise);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:13px 12px}
+  .btn-write{flex:1;font-family:var(--disp);font-weight:700;font-size:15px;border:none;border-radius:11px;padding:14px;cursor:pointer;background:var(--amber);color:#1a1206;transition:.15s}
+  .btn-write:hover{background:var(--amber-bright)}
+  .btn-write.busy{background:var(--ink-faint);color:#0d1320}
+  .wp-status{font-family:var(--mono);font-size:12px;color:var(--ink-dim);min-height:16px;text-align:center;line-height:1.6}
+  .wp-status .err{color:var(--red)}
+  .wp-loading{display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 0}
+  .wp-loading .ring{width:40px;height:40px;border:3px solid #ffffff18;border-top-color:var(--amber);border-radius:50%;animation:sp .8s linear infinite}
+  .wp-loading .msg{font-family:var(--mono);font-size:12.5px;color:var(--ink-dim);text-align:center;line-height:1.7}
+  .wp-loading .msg b{color:var(--amber-bright)}
+  .wp-loading .dots::after{content:"";animation:dots 1.4s steps(4,end) infinite}
+  @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}100%{content:""}}
+  .wp-loading .elapsed{font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+  .wp-result{display:flex;flex-direction:column;gap:10px}
+  .wp-result-head{display:flex;justify-content:space-between;align-items:center;font-family:var(--disp);font-size:13px;color:var(--ink-dim)}
+  .wp-mini{font-family:var(--mono);font-size:11px;background:var(--bg-raise);border:1px solid var(--line);border-radius:7px;color:var(--ink-dim);padding:7px 11px;cursor:pointer;margin-left:6px}
+  .wp-mini:hover{color:var(--ink);border-color:var(--amber)}
+  .wp-mini.go{background:var(--amber);color:#1a1206;font-weight:700;border-color:var(--amber)}
+  #scriptOut{width:100%;min-height:340px;background:#0c1322;border:1px solid var(--line);border-radius:12px;color:#cdd8ee;font-family:var(--mono);font-size:12px;line-height:1.7;padding:15px;resize:vertical;white-space:pre}
+  #scriptOut:focus{outline:none;border-color:var(--amber)}
+
+  .review-sheet{max-width:980px;width:94%;max-height:88vh;display:flex;flex-direction:column}
+  .review-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .review-head h2{font-family:var(--disp);font-size:18px;margin:0}
+  .review-sum{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);flex:1}
+  .review-sum b{color:var(--amber-bright)}
+  .review-filters{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .rf{font-family:var(--mono);font-size:11px;background:var(--bg-raise);border:1px solid var(--line);border-radius:7px;color:var(--ink-dim);padding:6px 11px;cursor:pointer}
+  .rf.active{background:#2f8f6b;color:#fff;border-color:#2f8f6b}
+  .review-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;overflow-y:auto;padding:2px}
+  .rcard{background:var(--bg-raise);border:1px solid var(--line);border-radius:11px;overflow:hidden;display:flex;flex-direction:column}
+  .rcard.bad{border-color:#b5532a}
+  .rcard .rthumb{aspect-ratio:16/9;background:#0c1322;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
+  .rcard .rthumb img{width:100%;height:100%;object-fit:cover}
+  .rcard .rthumb .ph{font-family:var(--mono);font-size:10px;color:var(--ink-faint);text-align:center;padding:8px}
+  .rcard .rid{position:absolute;top:6px;left:6px;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;background:#000a;border-radius:5px;padding:2px 7px}
+  .rcard .rbadge{position:absolute;top:6px;right:6px;font-family:var(--mono);font-size:9px;border-radius:5px;padding:2px 6px}
+  .rbadge.ok{background:#2f8f6b;color:#fff}.rbadge.no{background:#b5532a;color:#fff}.rbadge.re{background:#555;color:#fff}
+  .rcard .rbody{padding:9px 11px;display:flex;flex-direction:column;gap:7px}
+  .rcard .rnarr{font-family:var(--body);font-size:11.5px;color:var(--ink-dim);line-height:1.5;max-height:48px;overflow:hidden}
+  .rcard .raud{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
+  .rcard .raud audio{height:26px;max-width:130px}
+  .rcard .ractions{display:flex;gap:5px;margin-top:2px}
+  .rcard .ract{flex:1;font-family:var(--mono);font-size:10px;background:#0c1322;border:1px solid var(--line);border-radius:6px;color:var(--ink-dim);padding:6px;cursor:pointer}
+  .rcard .ract:hover{color:var(--ink);border-color:var(--amber)}
+  .rcard .ract.busy{opacity:.5;pointer-events:none}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-family:var(--mono);font-size:11px;color:var(--ink-dim);margin-bottom:6px}
+  .field input,.field select{width:100%;background:#0c1322;border:1px solid var(--line);border-radius:9px;color:var(--ink);font-family:var(--mono);font-size:13px;padding:11px 12px}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--amber)}
+  .field .sub{font-size:11px;color:var(--ink-faint);margin-top:6px;line-height:1.5}
+  .field .sub a{color:var(--amber)}
+  .row2{display:flex;gap:10px}.row2>*{flex:1}
+  .mini{font-family:var(--mono);font-size:11px;background:var(--bg-raise);border:1px solid var(--line);border-radius:7px;color:var(--cyan);padding:8px 10px;cursor:pointer;white-space:nowrap}
+  .mini:hover{border-color:var(--cyan)}
+  .cost{background:#0c1322;border:1px solid var(--line);border-radius:9px;padding:11px 13px;font-family:var(--mono);font-size:12px;color:var(--ink-dim);line-height:1.7;margin:6px 0 16px}
+  .cost b{color:var(--amber-bright)}
+  .sheet-btns{display:flex;gap:10px}
+  .sheet-btns .btn{flex:1;font-size:14px;padding:13px}
+  .btn-save{background:var(--amber);color:#1a1206}
+  .btn-cancel{background:var(--bg-raise);color:var(--ink-dim);border:1px solid var(--line)}
+
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--green);color:#04210f;font-family:var(--disp);font-weight:700;font-size:14px;padding:11px 22px;border-radius:30px;opacity:0;pointer-events:none;transition:.25s;z-index:70;box-shadow:0 10px 30px -8px #0008}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:var(--red);color:#2a0d07}
+  .err{color:var(--red);font-size:12.5px;text-align:center;margin-top:12px;font-family:var(--mono);min-height:16px;line-height:1.5}
+  @media(max-width:560px){.wrap{padding:18px 13px 30px}.cut-id{font-size:23px}.btn{font-size:12px;padding:12px 10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="slate"></div><div><h1>프롬프트 슬레이트</h1><span>STUDIO · IMAGE + VOICE + TIMELINE</span></div></div>
+    <div class="hdr-btns">
+      <span id="saveInfo" style="font-family:var(--mono);font-size:10px;color:var(--green);align-self:center;margin-right:2px"></span>
+      <button class="btn-ghost" id="settings">⚙ API 설정</button>
+      <button class="btn-ghost" id="reset" style="display:none">새 파일</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" id="tabWrite">✍️ 대본 생성</button>
+    <button class="tab" id="tabMake">🎬 이미지·음성 제작</button>
+  </div>
+
+  <div class="writepane" id="writepane">
+    <div class="wp-row">
+      <input type="text" id="topic" placeholder="주제나 인물을 입력하세요 (예: 김구, 타이타닉의 마지막 밤, 복리의 마법)">
+    </div>
+    <div class="genres" id="genres"></div>
+    <div class="wp-controls">
+      <div class="wp-model">
+        <select id="claudeModelSel">
+          <option value="claude-sonnet-4-6" selected>Sonnet 4.6 — 빠르고 저렴</option>
+          <option value="claude-opus-4-8">Opus 4.8 — 최고 품질</option>
+        </select>
+      </div>
+      <button class="btn-write" id="genScript">✦ 대본 생성</button>
+    </div>
+    <div class="wp-status" id="wpStatus"></div>
+    <div class="wp-result" id="wpResult" style="display:none">
+      <div class="wp-result-head">
+        <span>생성된 대본</span>
+        <div>
+          <button class="wp-mini" id="copyScript">복사</button>
+          <button class="wp-mini" id="dlScript">⤓ .md</button>
+          <button class="wp-mini go" id="useScript">이 대본으로 제작 →</button>
+        </div>
+      </div>
+      <textarea id="scriptOut" spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <label class="drop" id="drop" style="display:none">
+    <input type="file" id="file" accept=".md,.txt,.markdown" hidden>
+    <div class="ic">🎬</div>
+    <h2>대본 파일을 올려주세요</h2>
+    <p>나레이션 단락과 이미지 프롬프트를 컷으로 묶어, 제미나이로 이미지를·일레븐랩스로 음성을 생성합니다. 음성 길이가 곧 그 컷의 화면 시간이 되고, 타임라인 JSON과 에셋을 한 번에 내보냅니다.</p>
+    <div class="formats">지원: 대본 v3 .md (나레이션+컷) · 영상프롬프트 .txt (이미지 전용)</div>
+    <span class="pick">파일 선택</span>
+  </label>
+
+  <div class="player" id="player">
+    <div class="autobar">
+      <div class="lead" id="autoLead">API 키를 넣으면 자동 생성과 내보내기를 쓸 수 있어요.</div>
+      <label style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--ink-dim);cursor:pointer;white-space:nowrap" title="끄면 그레인·비네팅·파티클을 모두 빼고 깔끔하게 렌더합니다">
+        <input type="checkbox" id="overlayToggle" checked style="accent-color:var(--amber);width:14px;height:14px;cursor:pointer">✨ 오버레이
+      </label>
+      <button class="btn-run" id="runImg" disabled>▶ 이미지 일괄</button>
+      <button class="btn-run" id="runVoice" disabled>▶ 음성 일괄</button>
+      <button class="btn-run" id="retryBtn" style="background:#b5532a;display:none" title="생성에 실패한 컷만 다시 시도합니다">↻ 실패 다시</button>
+      <button class="btn-run" id="reviewBtn" style="background:#2f8f6b;display:none" title="생성한 이미지·음성을 한눈에 검수">🔍 검수</button>
+      <button class="btn-run exp" id="exportBtn" disabled>⤓ 타임라인 내보내기</button>
+      <button class="btn-run" id="shortsBtn" style="background:#c0476b;display:none" disabled>📱 쇼츠 내보내기</button>
+      <button class="btn-run" id="renderBtn" style="background:#7b4fd6" disabled>🎬 Shotstack 렌더</button>
+    </div>
+
+    <div class="strip-row">
+      <div class="strip" id="strip"></div>
+      <div class="count"><input id="jump" type="text" inputmode="numeric" value="1"> / <span id="total">1</span></div>
+    </div>
+
+    <div class="card">
+      <div class="meta"><div class="cut-id" id="cutId">C<em>1</em></div><div id="tags"></div></div>
+      <div class="narr">
+        <div class="ntop"><span class="nlabel">▶ NARRATION</span><span class="dur" id="dur"></span></div>
+        <div class="ntext" id="ntext"></div>
+        <div class="nbtns">
+          <button class="btn-tts" id="ttsBtn">🔊 음성 생성</button>
+          <audio id="audio" controls style="display:none"></audio>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="prompt-box" id="prompt"></div>
+        <div class="preview" id="preview"><div class="ph">생성하면 여기에<br>이미지가 표시됩니다</div></div>
+      </div>
+      <div class="controls">
+        <button class="btn btn-prev" id="prev">←</button>
+        <button class="btn btn-copy" id="copy">프롬프트 복사</button>
+        <button class="btn btn-gen" id="gen">✦ 이미지 생성하고 다음</button>
+      </div>
+      <div class="hint"><kbd>Space</kbd>/<kbd>→</kbd> 이미지·다음 · <kbd>V</kbd> 음성 · <kbd>C</kbd> 복사 · <kbd>←</kbd> 이전</div>
+    </div>
+
+    <details class="panel" id="commons"><summary><span>공통 · 보정 프롬프트 보기</span><span>▾</span></summary><div class="body" id="commonsBody"></div></details>
+
+    <div class="gallery" id="gallery" style="display:none">
+      <h3><span>생성된 에셋</span></h3>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div id="renderStatus" style="display:none;margin-top:14px;background:var(--bg-raise);border:1px solid var(--line);border-radius:11px;padding:14px 16px;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--ink-dim)"></div>
+    <div class="err" id="err"></div>
+  </div>
+</div>
+
+<div class="modal" id="reviewModal">
+  <div class="sheet review-sheet">
+    <div class="review-head">
+      <h2>🔍 검수 — 컷별 점검</h2>
+      <div class="review-sum" id="reviewSum"></div>
+      <button class="btn-ghost" id="closeReview">닫기</button>
+    </div>
+    <div class="review-filters">
+      <button class="rf active" data-f="all">전체</button>
+      <button class="rf" data-f="noimg">이미지 없음</button>
+      <button class="rf" data-f="noaud">음성 없음</button>
+      <button class="rf" data-f="ready">완성</button>
+    </div>
+    <div class="review-grid" id="reviewGrid"></div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h2>API 설정</h2>
+    <p class="desc">키는 이 브라우저에만 저장되고(localStorage) 어디에도 전송되지 않아요. 다음에 열 때 자동으로 불러옵니다.</p>
+
+    <div class="seg-title">✍️ Claude (대본 생성) <a class="keybtn" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">키 발급 ↗</a></div>
+    <div class="field"><label>Claude API 키</label><input type="password" id="claudeKey" placeholder="sk-ant-..." autocomplete="off"><div class="sub">발급: console.anthropic.com → Settings → API Keys</div></div>
+    <div class="seg-title">🖼 제미나이 (이미지) <a class="keybtn" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">키 발급 ↗</a></div>
+    <div class="field"><label>Gemini API 키</label><input type="password" id="geminiKey" placeholder="AIza..." autocomplete="off"><div class="sub">발급 페이지: aistudio.google.com/apikey</div></div>
+    <div class="field"><label>이미지 모델</label><select id="imgModel">
+      <option value="gemini-3-pro-image-preview">Nano Banana Pro — 고화질 ($0.134/장)</option>
+      <option value="gemini-3.1-flash-image-preview" selected>Nano Banana 2 — 빠르고 저렴 ($0.02~0.04/장)</option>
+    </select></div>
+
+    <div class="seg-title">🔊 일레븐랩스 (음성) <a class="keybtn" href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">키 발급 ↗</a></div>
+    <div class="field"><label>ElevenLabs API 키</label><input type="password" id="elevenKey" placeholder="sk_..." autocomplete="off"><div class="sub">발급: elevenlabs.io → Developer → API Key</div></div>
+    <div class="field"><label>음성 (Voice)</label>
+      <div class="row2"><select id="voiceSel"><option value="">— 키 입력 후 불러오기 —</option></select><button class="mini" id="loadVoices">목록 불러오기</button></div>
+      <div class="sub">직접 입력도 가능: <input type="text" id="voiceId" placeholder="voice_id 직접 입력" style="margin-top:6px"></div>
+    </div>
+    <div class="field"><label>음성 모델</label><select id="voiceModel">
+      <option value="eleven_multilingual_v2" selected>Multilingual v2 — 고품질 내레이션 (한국어 권장)</option>
+      <option value="eleven_v3">Eleven v3 — 최고 표현력</option>
+      <option value="eleven_flash_v2_5">Flash v2.5 — 빠르고 저렴</option>
+    </select></div>
+
+    <div class="seg-title">🎬 Shotstack (영상 렌더) <a class="keybtn" href="https://dashboard.shotstack.io/" target="_blank" rel="noopener">키 발급 ↗</a></div>
+    <div class="field"><label>Shotstack API 키</label><input type="password" id="shotKey" placeholder="키 입력" autocomplete="off"><div class="sub">stage(무료 테스트)와 v1(프로덕션) 키가 다릅니다. 환경에 맞는 키를 넣으세요.</div></div>
+    <div class="field"><label>환경</label><select id="shotEnv">
+      <option value="stage" selected>stage — 무료 테스트 (워터마크 있을 수 있음)</option>
+      <option value="v1">v1 — 프로덕션 (최종본)</option>
+    </select></div>
+
+    <div class="cost" id="costBox">예상 비용: 파일을 먼저 불러오세요.</div>
+    <div class="sheet-btns"><button class="btn btn-cancel" id="cancelSet">닫기</button><button class="btn btn-save" id="saveSet">저장</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">복사됨</div>
+
+<script>
+(function(){
+  "use strict";
+  const RENDER_JS_B64="IyEvdXNyL2Jpbi9lbnYgbm9kZQovKioKICogcmVuZGVyX2xvY2FsLmpzIOKAlCDroZzsu6wgZmZtcGVn66GcICLsnbTrr7jsp4AgKyDrgpjroIjsnbTshZgg4oaSIG1wNCIgKOyekOuniSDsl4bsnYwpCiAqCiAqIOyKrOugiOydtO2KuCAi7YOA7J6E65287J24IOuCtOuztOuCtOq4sCIgemlw7J2EIO2RvCDtj7TrjZTrpbwg64SY6riw66m0LAogKiDqsIEg7Lu3IOydtOuvuOyngOulvCDsnYzshLEg6ri47J2066eM7YG8IOyynOyynO2eiCDspIzsnbgo7LyE67KI7KaIKe2VmOqzoCwg7Lu3IOyCrOydtOulvCDtjpjsnbTrk5zroZwg64SY6riw66mwLAogKiDtlbTri7kg7Lu3IOydjOyEseydhCDquZTslYQg7Iic7ISc64yA66GcIOydtOyWtOu2meyXrCDtlZjrgpjsnZggbXA066W8IOunjOuTreuLiOuLpC4KICoKICog7Y+0642UIOq1rOyhsCAoemlw7J2EIO2RvCDqt7jrjIDroZwpOgogKiAgIDztj7TrjZQ+L2ltYWdlcy9DMDEucG5nIC4uLgogKiAgIDztj7TrjZQ+L2F1ZGlvL0MwMS5tcDMgLi4uCiAqICAgPO2PtOuNlD4vdGltZWxpbmUuanNvbgogKgogKiDsgqzsmqnrspU6CiAqICAgbm9kZSByZW5kZXJfbG9jYWwuanMgLi/rsJXsoJXtnaztjrhfZXhwb3J0CiAqICAgbm9kZSByZW5kZXJfbG9jYWwuanMgLi/rsJXsoJXtnaztjrhfZXhwb3J0IG91dC5tcDQgICAgICAgIC8vIOy2nOugpSDtjIzsnbzrqoUg7KeA7KCVCiAqCiAqIOyCrOyghCDspIDruYQ6IEhvbWVicmV366GcIGZmbXBlZyDshKTsuZggKGJyZXcgaW5zdGFsbCBmZm1wZWcpCiAqCiAqIOydjOyEseydtCDsl4bripQg7Lu37J2AIHRpbWVsaW5lLmpzb27snZggZHVyYXRpb24o6riA7J6Q7IiYIOy2lOyglSnsnLzroZwg6ri47J2066W8IOyeoeyKteuLiOuLpC4KICovCgpjb25zdCBmcyA9IHJlcXVpcmUoImZzIik7CmNvbnN0IHBhdGggPSByZXF1aXJlKCJwYXRoIik7CmNvbnN0IHsgZXhlY1N5bmMsIGV4ZWNGaWxlU3luYyB9ID0gcmVxdWlyZSgiY2hpbGRfcHJvY2VzcyIpOwoKY29uc3QgWywgLCBleHBvcnREaXIsIG91dEFyZ10gPSBwcm9jZXNzLmFyZ3Y7CmlmICghZXhwb3J0RGlyKSB7IGNvbnNvbGUuZXJyb3IoIuyCrOyaqeuylTogbm9kZSByZW5kZXJfbG9jYWwuanMgPGV4cG9ydO2PtOuNlD4gW+y2nOugpS5tcDRdIik7IHByb2Nlc3MuZXhpdCgxKTsgfQoKLy8gLS0tLSDshKTsoJUgKOybkO2VmOuptCDsiKvsnpDrp4wg67CU6r647IS47JqUKSAtLS0tCmNvbnN0IFcgPSAxOTIwLCBIID0gMTA4MDsgICAgIC8vIOy2nOugpSDtlbTsg4Hrj4QKY29uc3QgRlBTID0gMzA7ICAgICAgICAgICAgICAgLy8g7ZSE66CI7J6E66CI7J207Yq4CmNvbnN0IEZBREUgPSAwLjQ7ICAgICAgICAgICAgIC8vIOy7tyDsgqzsnbQg7Y6Y7J2065OcIOq4uOydtCjstIgpCmNvbnN0IFpPT01fTUFYID0gMS4xMjsgICAgICAgIC8vIOy8hOuyiOymiCDspIwg7LWc64yAIOuwsOycqCAoMS4wPeykjOyXhuydjCwgMS4xMj0xMiUg7KSM7J24KQoKLy8gLS0tLSDsmKTrsoTroIjsnbQg7ISk7KCVIC0tLS0KY29uc3QgT1ZFUkxBWV9ESVIgPSAib3ZlcmxheXMiOyAgICAgLy8g7YyM7J28IOyYpOuyhOugiOydtCDtj7TrjZQgKGR1c3QubXA0IOuTsSkKY29uc3QgT1ZFUkxBWV9PUEFDSVRZID0gMC41OyAgICAgICAgLy8g7YyM7J28IOyYpOuyhOugiOydtCDtlanshLEg6rCV64+EICgwfjEpCi8vIOuUlOyekOyduCDtlITrpqzshYsg4oaSIOyekOuPmSDsoIHsmqkg7Jik67KE66CI7J20ICjtjIzsnbwg7YOc6re4ICsgZmZtcGVnIOyekOyytO2aqOqzvCkKY29uc3QgUFJFU0VUX09WRVJMQVkgPSB7CiAgbXlzdGVyeTogeyBmaWxlczogWyJkdXN0Il0sIGdyYWluOiAwLjA1LCB2aWduZXR0ZTogMC4zNSB9LAogIHRyYWdlZHk6IHsgZmlsZXM6IFsiZHVzdCJdLCBncmFpbjogMC4wNCwgdmlnbmV0dGU6IDAuNDAgfSwKICB0cml1bXBoOiB7IGZpbGVzOiBbImJva2VoIl0sIGdyYWluOiAwLjA0LCB2aWduZXR0ZTogMC4xNSB9LAogIG51bWJlcnM6IHsgZmlsZXM6IFtdLCAgICAgICAgZ3JhaW46IDAuMDMsIHZpZ25ldHRlOiAwLjEwIH0KfTsKY29uc3QgREVGQVVMVF9PVkVSTEFZID0geyBmaWxlczogW10sIGdyYWluOiAwLjA0LCB2aWduZXR0ZTogMC4yNSB9OwoKLy8gLS0tLSDsgqzsoIQg7KCQ6rKAIC0tLS0KZnVuY3Rpb24gaGFzKGNtZCkgeyB0cnkgeyBleGVjU3luYyhgY29tbWFuZCAtdiAke2NtZH1gLCB7IHN0ZGlvOiAiaWdub3JlIiB9KTsgcmV0dXJuIHRydWU7IH0gY2F0Y2ggeyByZXR1cm4gZmFsc2U7IH0gfQppZiAoIWhhcygiZmZtcGVnIikpIHsgY29uc29sZS5lcnJvcigi4pyXIGZmbXBlZ+qwgCDsl4bsirXri4jri6QuICdicmV3IGluc3RhbGwgZmZtcGVnJyDtm4Qg64uk7IucIOyLpO2Wie2VmOyEuOyalC4iKTsgcHJvY2Vzcy5leGl0KDEpOyB9Cgpjb25zdCB0bFBhdGggPSBwYXRoLmpvaW4oZXhwb3J0RGlyLCAidGltZWxpbmUuanNvbiIpOwppZiAoIWZzLmV4aXN0c1N5bmModGxQYXRoKSkgeyBjb25zb2xlLmVycm9yKGDinJcgdGltZWxpbmUuanNvbuydtCDsl4bsirXri4jri6Q6ICR7dGxQYXRofWApOyBwcm9jZXNzLmV4aXQoMSk7IH0KY29uc3QgdGwgPSBKU09OLnBhcnNlKGZzLnJlYWRGaWxlU3luYyh0bFBhdGgsICJ1dGY4IikpOwovLyDtjIzsnbzrqoXsl5Ag7JO4IOyImCDsl4bripQg66y47J6QIOygnOqxsDogLyBcIDogKiA/ICIgPCA+IHwg7Im87ZGcwrfqs7XrsLEg65OxCmNvbnN0IHNhZmVOYW1lID0gKHRsLnByb2plY3QgfHwgInZpZGVvIikKICAucmVwbGFjZSgvW1wvXFw6Kj8iPD58XS9nLCAiIikgICAvLyBPUyDquIjsp4Ag66y47J6QIOygnOqxsAogIC5yZXBsYWNlKC9bLCgpXS9nLCAiIikgICAgICAgICAgICAvLyDsibztkZzCt+q0hO2YuCDsoJzqsbAKICAucmVwbGFjZSgvXHMrL2csICJfIikgICAgICAgICAgICAgLy8g6rO167CxIOKGkiBfCiAgLnJlcGxhY2UoL18rL2csICJfIikgICAgICAgICAgICAgIC8vIOyXsOyGjSBfIOygleumrAogIC5yZXBsYWNlKC9eX3xfJC9nLCAiIikgICAgICAgICAgICAvLyDslZ7rkqQgXyDsoJzqsbAKICAuc2xpY2UoMCwgNjApIHx8ICJ2aWRlbyI7CmNvbnN0IHByb2plY3QgPSBzYWZlTmFtZTsKY29uc3Qgb3V0RmlsZSA9IG91dEFyZyB8fCBwYXRoLmpvaW4oZXhwb3J0RGlyLCBwcm9qZWN0ICsgIi5tcDQiKTsKCmNvbnN0IHRtcCA9IHBhdGguam9pbihleHBvcnREaXIsICIucmVuZGVyX3RtcCIpOwpmcy5ybVN5bmModG1wLCB7IHJlY3Vyc2l2ZTogdHJ1ZSwgZm9yY2U6IHRydWUgfSk7CmZzLm1rZGlyU3luYyh0bXAsIHsgcmVjdXJzaXZlOiB0cnVlIH0pOwoKLy8g7Iuk7KCcIOydjOyEsSDquLjsnbTrpbwgZmZwcm9iZeuhnCDsuKHsoJUgKHRpbWVsaW5lIOqwkuuztOuLpCDsoJXtmZUpCmZ1bmN0aW9uIHByb2JlRHVyKGZpbGUpIHsKICB0cnkgewogICAgY29uc3Qgb3V0ID0gZXhlY0ZpbGVTeW5jKCJmZnByb2JlIiwgWyItdiIsICJlcnJvciIsICItc2hvd19lbnRyaWVzIiwgImZvcm1hdD1kdXJhdGlvbiIsICItb2YiLCAiZGVmYXVsdD1udz0xOm5rPTEiLCBmaWxlXSkudG9TdHJpbmcoKS50cmltKCk7CiAgICBjb25zdCBkID0gcGFyc2VGbG9hdChvdXQpOwogICAgcmV0dXJuIGlzRmluaXRlKGQpICYmIGQgPiAwID8gZCA6IG51bGw7CiAgfSBjYXRjaCB7IHJldHVybiBudWxsOyB9Cn0KCi8vIOyYgeyDgeyXkCDrk6TslrTqsIgg7Lu3OiDsnbTrr7jsp4DqsIAg7J6I6rOgICsg64KY66CI7J207IWYKOydjOyEsSnsnbQg7J6I64qUIOy7t+unjAovLyAoQjAg6rCZ7J2AIOq4sOykgCDsnbTrr7jsp4DripQg64KY66CI7J207IWY7J20IOyXhuycvOuvgOuhnCDsnpDrj5kg7KCc7Jm465CoKQpjb25zdCBzZWdzID0gdGwuc2VnbWVudHMuZmlsdGVyKHMgPT4gewogIGlmICghcy5pbWFnZSkgcmV0dXJuIGZhbHNlOwogIGNvbnN0IG9rID0gcy5hdWRpbyAmJiBmcy5leGlzdHNTeW5jKHBhdGguam9pbihleHBvcnREaXIsICJhdWRpbyIsIHMuYXVkaW8pKTsKICByZXR1cm4gb2s7Cn0pOwppZiAoIXNlZ3MubGVuZ3RoKSB7IGNvbnNvbGUuZXJyb3IoIuKclyDroIzrjZTtlaAg7Lu37J20IOyXhuyKteuLiOuLpC4gKOydtOuvuOyngCvsnYzshLHsnbQg66qo65GQIOyeiOuKlCDsu7fsnbQg7ZWE7JqUKSIpOyBwcm9jZXNzLmV4aXQoMSk7IH0KY29uc3Qgc2tpcHBlZCA9IHRsLnNlZ21lbnRzLmZpbHRlcihzID0+IHMuaW1hZ2UgJiYgIShzLmF1ZGlvICYmIGZzLmV4aXN0c1N5bmMocGF0aC5qb2luKGV4cG9ydERpciwgImF1ZGlvIiwgcy5hdWRpbykpKSk7CmlmIChza2lwcGVkLmxlbmd0aCkgY29uc29sZS5sb2coYCAgKOydjOyEsSDsl4bripQg7Lu3ICR7c2tpcHBlZC5sZW5ndGh96rCcIOygnOyZuDogJHtza2lwcGVkLm1hcChzPT5zLmlkKS5qb2luKCIsICIpfSlcbmApOwoKY29uc29sZS5sb2coYOKWtiAke3Byb2plY3R9IMK3IOy7tyAke3NlZ3MubGVuZ3RofeqwnCDroIzrjZQg7Iuc7J6RICgke1d9eCR7SH0sICR7RlBTfWZwcylcbmApOwoKLy8g7Lu37J2YIOyYpOuyhOugiOydtCDshKTsoJUg6rKw7KCVOiBzZWdtZW50Lm92ZXJsYXkg7Jqw7ISgLCDsl4bsnLzrqbQgZGVzaWduIO2UhOumrOyFiwpmdW5jdGlvbiByZXNvbHZlT3ZlcmxheShzZWcpIHsKICAvLyDsiqzroIjsnbTtirjsl5DshJwg7Jik67KE66CI7J20IOyghOyytCBPRkbroZwg64K067O064K4IOqyveyasDog6re466CI7J24wrfruYTrhKTtjIXquYzsp4Ag66qo65GQIOuBlAogIGlmIChzZWcub3ZlcmxheSA9PT0gIm9mZiIpIHJldHVybiB7IGZpbGVzOiBbXSwgZ3JhaW46IDAsIHZpZ25ldHRlOiAwIH07CiAgY29uc3QgcHJlc2V0ID0gUFJFU0VUX09WRVJMQVlbc2VnLmRlc2lnbl0gfHwgREVGQVVMVF9PVkVSTEFZOwogIGxldCBmaWxlcyA9IHByZXNldC5maWxlcyA/IFsuLi5wcmVzZXQuZmlsZXNdIDogW107CiAgLy8g64yA67O4IOy7t+ydtCDsp4HsoJEg7KeA7KCV7ZWcIG92ZXJsYXkgKOyYiDogImR1c3QrbGlnaHRsZWFrIiwgIm5vbmUiKQogIGlmIChzZWcub3ZlcmxheSkgewogICAgaWYgKHNlZy5vdmVybGF5ID09PSAibm9uZSIpIGZpbGVzID0gW107CiAgICBlbHNlIGZpbGVzID0gc2VnLm92ZXJsYXkuc3BsaXQoIisiKS5tYXAocyA9PiBzLnRyaW0oKSkuZmlsdGVyKEJvb2xlYW4pOwogIH0KICAvLyDsi6TsoJwg7YyM7J287J20IOyeiOuKlCDqsoPrp4wKICBmaWxlcyA9IGZpbGVzLmZpbHRlcih0ID0+IGZzLmV4aXN0c1N5bmMocGF0aC5qb2luKGV4cG9ydERpciwgT1ZFUkxBWV9ESVIsIHQgKyAiLm1wNCIpKSk7CiAgcmV0dXJuIHsgZmlsZXMsIGdyYWluOiBwcmVzZXQuZ3JhaW4gPz8gREVGQVVMVF9PVkVSTEFZLmdyYWluLCB2aWduZXR0ZTogcHJlc2V0LnZpZ25ldHRlID8/IERFRkFVTFRfT1ZFUkxBWS52aWduZXR0ZSB9Owp9Cgpjb25zdCBwYXJ0RmlsZXMgPSBbXTsKc2Vncy5mb3JFYWNoKChzLCBpKSA9PiB7CiAgY29uc3QgaW1nUGF0aCA9IHBhdGguam9pbihleHBvcnREaXIsICJpbWFnZXMiLCBzLmltYWdlKTsKICBpZiAoIWZzLmV4aXN0c1N5bmMoaW1nUGF0aCkpIHsgY29uc29sZS5lcnJvcihgICDinJcg7J2066+47KeAIOyXhuydjCwg6rG064SI65yAOiAke3MuaW1hZ2V9YCk7IHJldHVybjsgfQoKICBjb25zdCBhdWRQYXRoID0gcy5hdWRpbyA/IHBhdGguam9pbihleHBvcnREaXIsICJhdWRpbyIsIHMuYXVkaW8pIDogbnVsbDsKICBjb25zdCBoYXNBdWRpbyA9IGF1ZFBhdGggJiYgZnMuZXhpc3RzU3luYyhhdWRQYXRoKTsKICBsZXQgZHVyID0gaGFzQXVkaW8gPyBwcm9iZUR1cihhdWRQYXRoKSA6IG51bGw7CiAgaWYgKCFkdXIpIGR1ciA9ICsocy5kdXJhdGlvbiB8fCAzKTsKICBkdXIgPSBNYXRoLm1heCgxLjIsICtkdXIudG9GaXhlZCgyKSk7CgogIGNvbnN0IHBhcnQgPSBwYXRoLmpvaW4odG1wLCBgcGFydF8ke1N0cmluZyhpKS5wYWRTdGFydCgzLCAiMCIpfS5tcDRgKTsKICBwYXJ0RmlsZXMucHVzaChwYXJ0KTsKCiAgY29uc3QgZnJhbWVzID0gTWF0aC5yb3VuZChkdXIgKiBGUFMpOwogIGNvbnN0IHpJbmMgPSAoWk9PTV9NQVggLSAxLjApOwogIGNvbnN0IG92ID0gcmVzb2x2ZU92ZXJsYXkocyk7CgogIC8vIC0tLSDsnoXroKUg6rWs7ISxIC0tLQogIGNvbnN0IGlucHV0cyA9IFsiLWxvb3AiLCAiMSIsICItaSIsIGltZ1BhdGhdOyAgICAgIC8vIFswXSDsnbTrr7jsp4AKICBpZiAoaGFzQXVkaW8pIGlucHV0cy5wdXNoKCItaSIsIGF1ZFBhdGgpOyAgICAgICAgICAvLyBbMV0g7J2M7ISxCiAgY29uc3QgYXVkaW9JZHggPSBoYXNBdWRpbyA/IDEgOiAtMTsKICBsZXQgbmV4dElkeCA9IGhhc0F1ZGlvID8gMiA6IDE7CiAgY29uc3Qgb3ZJbnB1dHMgPSBbXTsKICBvdi5maWxlcy5mb3JFYWNoKHRhZyA9PiB7CiAgICBpbnB1dHMucHVzaCgiLXN0cmVhbV9sb29wIiwgIi0xIiwgIi1pIiwgcGF0aC5qb2luKGV4cG9ydERpciwgT1ZFUkxBWV9ESVIsIHRhZyArICIubXA0IikpOwogICAgb3ZJbnB1dHMucHVzaChuZXh0SWR4KyspOwogIH0pOwoKICAvLyAtLS0g67Kg7J207IqkOiDsvITrsojspoggKyDqt7jroIjsnbggKyDruYTrhKTtjIUgKyDtjpjsnbTrk5wgLS0tCiAgY29uc3QgZmMgPSBbXTsKICBsZXQgY2hhaW4gPQogICAgYFswOnZdc2NhbGU9JHtXKjR9OiR7SCo0fTpmb3JjZV9vcmlnaW5hbF9hc3BlY3RfcmF0aW89aW5jcmVhc2UsY3JvcD0ke1cqNH06JHtIKjR9LGAgKwogICAgYHpvb21wYW49ej0nbWluKDEuMCske3pJbmN9Km9uLyR7ZnJhbWVzfSwke1pPT01fTUFYfSknOng9J2l3LzItKGl3L3pvb20vMiknOnk9J2loLzItKGloL3pvb20vMiknOmQ9JHtmcmFtZXN9OnM9JHtXfXgke0h9OmZwcz0ke0ZQU30sYCArCiAgICBgc2V0c2FyPTFgOwogIGlmIChvdi52aWduZXR0ZSA+IDApIGNoYWluICs9IGAsdmlnbmV0dGU9UEkvNCokeyhvdi52aWduZXR0ZSoxLjYpLnRvRml4ZWQoMil9YDsKICBpZiAob3YuZ3JhaW4gPiAwKSAgICBjaGFpbiArPSBgLG5vaXNlPWFsbHM9JHtNYXRoLnJvdW5kKG92LmdyYWluKjIwMCl9OmFsbGY9dGA7CiAgZmMucHVzaChgJHtjaGFpbn1bYmFzZV1gKTsKCiAgLy8gLS0tIO2MjOydvCDsmKTrsoTroIjsnbTrpbwgc2NyZWVuIOu4lOugjOuTnOuhnCDssKjroYDssKjroYAg7ZWp7ISxIC0tLQogIGxldCBsYXN0ID0gImJhc2UiOwogIG92SW5wdXRzLmZvckVhY2goKGluSWR4LCBrKSA9PiB7CiAgICBjb25zdCBvdmwgPSBgb3Yke2t9YCwgb3V0ID0gYG0ke2t9YDsKICAgIGZjLnB1c2goYFske2luSWR4fTp2XXNjYWxlPSR7V306JHtIfSxzZXRzYXI9MSxmb3JtYXQ9Z2JycCxjb2xvcmNoYW5uZWxtaXhlcj1hYT0ke09WRVJMQVlfT1BBQ0lUWX1bJHtvdmx9XWApOwogICAgZmMucHVzaChgWyR7bGFzdH1dWyR7b3ZsfV1ibGVuZD1hbGxfbW9kZT1zY3JlZW46c2hvcnRlc3Q9MVske291dH1dYCk7CiAgICBsYXN0ID0gb3V0OwogIH0pOwoKICAvLyAtLS0g7Y6Y7J2065OcIOyduC/slYTsm4Mg66eI66y066asIC0tLQogIGZjLnB1c2goYFske2xhc3R9XWZhZGU9dD1pbjpzdD0wOmQ9JHtGQURFfSxmYWRlPXQ9b3V0OnN0PSR7KGR1ci1GQURFKS50b0ZpeGVkKDIpfTpkPSR7RkFERX0sZm9ybWF0PXl1djQyMHBbdm91dF1gKTsKCiAgY29uc3QgYXJncyA9IFsiLXkiLCAiLWxvZ2xldmVsIiwgImVycm9yIiwgLi4uaW5wdXRzLAogICAgIi1maWx0ZXJfY29tcGxleCIsIGZjLmpvaW4oIjsiKSwgIi1tYXAiLCAiW3ZvdXRdIl07CiAgaWYgKGhhc0F1ZGlvKSBhcmdzLnB1c2goIi1tYXAiLCBgJHthdWRpb0lkeH06YWAsICItYzphIiwgImFhYyIsICItYjphIiwgIjE5MmsiKTsKICBlbHNlIGFyZ3MucHVzaCgiLWFuIik7CiAgYXJncy5wdXNoKCItdCIsIFN0cmluZyhkdXIpLCAiLXIiLCBTdHJpbmcoRlBTKSwgIi1jOnYiLCAibGlieDI2NCIsICItcGl4X2ZtdCIsICJ5dXY0MjBwIiwgcGFydCk7CgogIGNvbnN0IG92TGFiZWwgPSBvdi5maWxlcy5sZW5ndGggPyBgICske292LmZpbGVzLmpvaW4oIiwiKX1gIDogIiI7CiAgcHJvY2Vzcy5zdGRvdXQud3JpdGUoYFxyICBbJHtpICsgMX0vJHtzZWdzLmxlbmd0aH1dICR7cy5pZH0gICR7ZHVyfXMke292TGFiZWx9ICAgYCk7CiAgZXhlY0ZpbGVTeW5jKCJmZm1wZWciLCBhcmdzLCB7IHN0ZGlvOiBbImlnbm9yZSIsICJpZ25vcmUiLCAiaW5oZXJpdCJdIH0pOwp9KTsKCmNvbnNvbGUubG9nKGBcblxu4pa2IOy7tyDsnbTslrTrtpnsnbTripQg7KSRLi4uYCk7CmNvbnN0IGxpc3RQYXRoID0gcGF0aC5qb2luKHRtcCwgImNvbmNhdC50eHQiKTsKZnMud3JpdGVGaWxlU3luYyhsaXN0UGF0aCwgcGFydEZpbGVzLm1hcChmID0+IGBmaWxlICcke3BhdGgucmVzb2x2ZShmKX0nYCkuam9pbigiXG4iKSk7CgovLyDsmKTrlJTsmKQg7Jyg66y06rCAIOyEnuyXrCDsnojsnYQg7IiYIOyeiOycvOuvgOuhnCDsnqzsnbjsvZTrlKnsnLzroZwg7JWI7KCE7ZWY6rKMIGNvbmNhdApleGVjRmlsZVN5bmMoImZmbXBlZyIsIFsiLXkiLCAiLWxvZ2xldmVsIiwgImVycm9yIiwgIi1mIiwgImNvbmNhdCIsICItc2FmZSIsICIwIiwgIi1pIiwgbGlzdFBhdGgsCiAgIi1jOnYiLCAibGlieDI2NCIsICItcGl4X2ZtdCIsICJ5dXY0MjBwIiwgIi1jOmEiLCAiYWFjIiwgIi1iOmEiLCAiMTkyayIsICItciIsIFN0cmluZyhGUFMpLCBvdXRGaWxlXSwKICB7IHN0ZGlvOiBbImlnbm9yZSIsICJpZ25vcmUiLCAiaW5oZXJpdCJdIH0pOwoKZnMucm1TeW5jKHRtcCwgeyByZWN1cnNpdmU6IHRydWUsIGZvcmNlOiB0cnVlIH0pOwoKY29uc3QgbWIgPSAoZnMuc3RhdFN5bmMob3V0RmlsZSkuc2l6ZSAvIDEwNDg1NzYpLnRvRml4ZWQoMSk7CmNvbnNvbGUubG9nKGBcbuKchSDsmYTshLEhXG4gICAke291dEZpbGV9ICAoJHttYn0gTUIpXG5gKTsK";
+  const SHORTS_JS_B64="IyEvdXNyL2Jpbi9lbnYgbm9kZQovKioKICogcmVuZGVyX3Nob3J0cy5qcyDigJQg66Gx7Y+8IOyXkOyFi+ydhCA5OjE2IOyEuOuhnCDsh7zsuKDroZwg67OA7ZmYCiAqCiAqIOyKrOugiOydtO2KuCAi7Ie87LigIOuCtOuztOuCtOq4sCIgemlw7J2EIO2RvCDtj7TrjZTrpbwg64SY6riw66m0LCBzaG9ydHMuanNvbuyXkCDsoJXsnZjrkJwKICog7Ie87Lig65Ok7J2EIOqwgeqwgSA5OjE2KDEwODB4MTkyMCkg7IS466GcIOyYgeyDgeycvOuhnCDroIzrjZTtlanri4jri6QuCiAqIOugiOydtOyVhOybgzog7IOB64uoIDLspIQg7KCc66qpKO2dsC/rhbjrnpEpIMK3IOykkeyVmSDsnbTrr7jsp4Agwrcg7ZWY64uoIOuCmOugiOydtOyFmCDsnpDrp4kgwrcg66eo7JWE656YIOyxhOuEkOuqhQogKgogKiDtj7TrjZQg6rWs7KGwOgogKiAgIDztj7TrjZQ+L2ltYWdlcy9DMDEucG5nIC4uLgogKiAgIDztj7TrjZQ+L2F1ZGlvL0MwMS5tcDMgLi4uCiAqICAgPO2PtOuNlD4vc2hvcnRzLmpzb24gICAgICAgICjsh7zsuKAg7KCV7J2YICsg7Lu367OEIOuCmOugiOydtOyFmC/quLjsnbQpCiAqCiAqIOyCrOyaqeuylToKICogICBub2RlIHJlbmRlcl9zaG9ydHMuanMgLiAgICAgICAgICAgICAgLy8g66qo65OgIOyHvOy4oCDroIzrjZQKICogICBub2RlIHJlbmRlcl9zaG9ydHMuanMgLiBzaG9ydDEgICAgICAgLy8g7Yq57KCVIOyHvOy4oOunjAogKgogKiDsgqzsoIQg7KSA67mEOiBicmV3IGluc3RhbGwgZmZtcGVnIG5vZGUKICovCgpjb25zdCBmcyA9IHJlcXVpcmUoImZzIik7CmNvbnN0IHBhdGggPSByZXF1aXJlKCJwYXRoIik7CmNvbnN0IHsgZXhlY1N5bmMsIGV4ZWNGaWxlU3luYyB9ID0gcmVxdWlyZSgiY2hpbGRfcHJvY2VzcyIpOwoKY29uc3QgWywgLCBleHBvcnREaXIsIG9ubHlJZF0gPSBwcm9jZXNzLmFyZ3Y7CmlmICghZXhwb3J0RGlyKSB7IGNvbnNvbGUuZXJyb3IoIuyCrOyaqeuylTogbm9kZSByZW5kZXJfc2hvcnRzLmpzIDztj7TrjZQ+IFvsh7zsuKBpZF0iKTsgcHJvY2Vzcy5leGl0KDEpOyB9Cgpjb25zdCBXID0gMTA4MCwgSCA9IDE5MjAsIEZQUyA9IDMwOwpjb25zdCBGQURFID0gMC4zOwoKLy8g65SU7J6Q7J24IO2UhOumrOyFiyAo67Cw6rK9L+qwleyhsC/snpDrp4nsg4kpCmNvbnN0IFBSRVNFVFMgPSB7CiAgbXlzdGVyeTogIHsgYmc6ICIjMGQxMzIwIiwgYWNjZW50OiAiI2Y0YmQ2ZSIsIHN1YjogIiNkYmU2ZmIiLCBjaGFubmVsOiAiIzg1OTViNSIgfSwKICBudW1iZXJzOiAgeyBiZzogIiMwYTE4MjgiLCBhY2NlbnQ6ICIjNWRkMGEwIiwgc3ViOiAiI2VhZjRmZiIsIGNoYW5uZWw6ICIjN2RhMGMwIiB9LAogIHRyYWdlZHk6ICB7IGJnOiAiIzE0MTAxYSIsIGFjY2VudDogIiNjOThmZDYiLCBzdWI6ICIjZThkZmYwIiwgY2hhbm5lbDogIiM5MDgwYTAiIH0sCiAgdHJpdW1waDogIHsgYmc6ICIjMWExNDA4IiwgYWNjZW50OiAiI2Y0YmQ2ZSIsIHN1YjogIiNmZmY0ZTAiLCBjaGFubmVsOiAiI2MwYTg4MCIgfQp9Owpjb25zdCBERUZBVUxUX1BSRVNFVCA9IFBSRVNFVFMubXlzdGVyeTsKCi8vIO2VnOq4gCDtj7Dtirgg7J6Q64+ZIO2DkOyDiSAobWFjT1MpCmZ1bmN0aW9uIGZpbmRGb250KCkgewogIGNvbnN0IGNhbmRzID0gWwogICAgIi9TeXN0ZW0vTGlicmFyeS9Gb250cy9BcHBsZVNER290aGljTmVvLnR0YyIsCiAgICAiL1N5c3RlbS9MaWJyYXJ5L0ZvbnRzL1N1cHBsZW1lbnRhbC9BcHBsZUdvdGhpYy50dGYiLAogICAgIi9MaWJyYXJ5L0ZvbnRzL05hbnVtR290aGljLnR0ZiIsCiAgICAiL1N5c3RlbS9MaWJyYXJ5L0ZvbnRzL0hlbHZldGljYS50dGMiCiAgXTsKICBmb3IgKGNvbnN0IGYgb2YgY2FuZHMpIGlmIChmcy5leGlzdHNTeW5jKGYpKSByZXR1cm4gZjsKICByZXR1cm4gbnVsbDsKfQpjb25zdCBGT05UID0gZmluZEZvbnQoKTsKaWYgKCFGT05UKSBjb25zb2xlLndhcm4oIuKaoCDtlZzquIAg7Y+w7Yq466W8IOuquyDssL7slZjsirXri4jri6QuIOyekOunieydtCDquajsp4gg7IiYIOyeiOyWtOyalC4iKTsKCmZ1bmN0aW9uIGhhcyhjKXt0cnl7ZXhlY1N5bmMoYGNvbW1hbmQgLXYgJHtjfWAse3N0ZGlvOiJpZ25vcmUifSk7cmV0dXJuIHRydWU7fWNhdGNoe3JldHVybiBmYWxzZTt9fQppZighaGFzKCJmZm1wZWciKSl7Y29uc29sZS5lcnJvcigi4pyXIGZmbXBlZ+qwgCDsl4bsirXri4jri6QuIGJyZXcgaW5zdGFsbCBmZm1wZWciKTtwcm9jZXNzLmV4aXQoMSk7fQoKY29uc3Qgc2ogPSBwYXRoLmpvaW4oZXhwb3J0RGlyLCAic2hvcnRzLmpzb24iKTsKaWYoIWZzLmV4aXN0c1N5bmMoc2opKXtjb25zb2xlLmVycm9yKCLinJcgc2hvcnRzLmpzb27snbQg7JeG7Iq164uI64ukLiDsiqzroIjsnbTtirggJ+yHvOy4oCDrgrTrs7TrgrTquLAn66GcIOuwm+ydgCDtj7TrjZTsnbjsp4Ag7ZmV7J247ZWY7IS47JqULiIpO3Byb2Nlc3MuZXhpdCgxKTt9CmNvbnN0IGRhdGEgPSBKU09OLnBhcnNlKGZzLnJlYWRGaWxlU3luYyhzaiwidXRmOCIpKTsKY29uc3Qgc2VnTWFwID0ge307IChkYXRhLnNlZ21lbnRzfHxbXSkuZm9yRWFjaChzPT5zZWdNYXBbcy5pZF09cyk7CgpmdW5jdGlvbiBwcm9iZUR1cihmKXt0cnl7Y29uc3Qgbz1leGVjRmlsZVN5bmMoImZmcHJvYmUiLFsiLXYiLCJlcnJvciIsIi1zaG93X2VudHJpZXMiLCJmb3JtYXQ9ZHVyYXRpb24iLCItb2YiLCJkZWZhdWx0PW53PTE6bms9MSIsZl0pLnRvU3RyaW5nKCkudHJpbSgpO2NvbnN0IGQ9cGFyc2VGbG9hdChvKTtyZXR1cm4gZD4wP2Q6bnVsbDt9Y2F0Y2h7cmV0dXJuIG51bGw7fX0KCi8vIGRyYXd0ZXh07JqpIGVzY2FwZQpmdW5jdGlvbiBlc2ModCl7cmV0dXJuIFN0cmluZyh0KS5yZXBsYWNlKC9cXC9nLCJcXFxcIikucmVwbGFjZSgvOi9nLCJcXDoiKS5yZXBsYWNlKC8nL2csIlx1MjAxOSIpLnJlcGxhY2UoLyUvZywiXFwlIik7fQovLyDsnpDrp4kg7KSE67CU6r+IICjrjIDrnrUgMTbsnpDsl5DshJwg7KSE67CU6r+IKQpmdW5jdGlvbiB3cmFwKHQsbil7Y29uc3Qgdz10LnNwbGl0KC9ccysvKTtjb25zdCBsaW5lcz1bXTtsZXQgY3VyPSIiO2Zvcihjb25zdCB3b3JkIG9mIHcpe2lmKChjdXIrIiAiK3dvcmQpLnRyaW0oKS5sZW5ndGg+bil7bGluZXMucHVzaChjdXIudHJpbSgpKTtjdXI9d29yZDt9ZWxzZSBjdXIrPSIgIit3b3JkO31pZihjdXIudHJpbSgpKWxpbmVzLnB1c2goY3VyLnRyaW0oKSk7cmV0dXJuIGxpbmVzLnNsaWNlKDAsMikuam9pbigiXG4iKTt9Cgpjb25zdCB0bXAgPSBwYXRoLmpvaW4oZXhwb3J0RGlyLCAiLnNob3J0c190bXAiKTsKY29uc3Qgc2hvcnRzID0gKGRhdGEuc2hvcnRzfHxbXSkuZmlsdGVyKHM9PiFvbmx5SWR8fHMuaWQ9PT1vbmx5SWQpOwppZighc2hvcnRzLmxlbmd0aCl7Y29uc29sZS5lcnJvcigi4pyXIOugjOuNlO2VoCDsh7zsuKDqsIAg7JeG7Iq164uI64ukLiIrKG9ubHlJZD9gIChpZDogJHtvbmx5SWR9KWA6IiIpKTtwcm9jZXNzLmV4aXQoMSk7fQoKY29uc29sZS5sb2coYOKWtiDsh7zsuKAgJHtzaG9ydHMubGVuZ3RofeqwnCDroIzrjZQg7Iuc7J6RICgke1d9eCR7SH0pXG5gKTsKCmZvcihjb25zdCBzaCBvZiBzaG9ydHMpewogIGNvbnN0IFAgPSBQUkVTRVRTW3NoLmRlc2lnbl0gfHwgREVGQVVMVF9QUkVTRVQ7CiAgZnMucm1TeW5jKHRtcCx7cmVjdXJzaXZlOnRydWUsZm9yY2U6dHJ1ZX0pO2ZzLm1rZGlyU3luYyh0bXAse3JlY3Vyc2l2ZTp0cnVlfSk7CiAgY29uc29sZS5sb2coYOKWoCAke3NoLmlkfSBbJHtzaC5kZXNpZ259XSAke3NoLnRpdGxlX3RvcH0gLyAke3NoLnRpdGxlX2JvdHRvbX1gKTsKCiAgY29uc3QgcGFydHM9W107CiAgc2guY3V0cy5mb3JFYWNoKChjaWQsaSk9PnsKICAgIGNvbnN0IHNlZz1zZWdNYXBbY2lkXTsgaWYoIXNlZyl7Y29uc29sZS5sb2coYCAg4pyXICR7Y2lkfSDsoJXrs7Qg7JeG7J2MLCDqsbTrhIjrnIBgKTtyZXR1cm47fQogICAgY29uc3QgaW1nPXBhdGguam9pbihleHBvcnREaXIsImltYWdlcyIsc2VnLmltYWdlfHxjaWQrIi5wbmciKTsKICAgIGlmKCFmcy5leGlzdHNTeW5jKGltZykpe2NvbnNvbGUubG9nKGAgIOKclyAke2NpZH0g7J2066+47KeAIOyXhuydjGApO3JldHVybjt9CiAgICBjb25zdCBhdWQ9c2VnLmF1ZGlvP3BhdGguam9pbihleHBvcnREaXIsImF1ZGlvIixzZWcuYXVkaW8pOm51bGw7CiAgICBjb25zdCBoYXNBPWF1ZCYmZnMuZXhpc3RzU3luYyhhdWQpOwogICAgbGV0IGR1cj1oYXNBP3Byb2JlRHVyKGF1ZCk6bnVsbDsgaWYoIWR1cilkdXI9KyhzZWcuZHVyYXRpb258fDMpOyBkdXI9TWF0aC5tYXgoMS4yLCtkdXIudG9GaXhlZCgyKSk7CgogICAgY29uc3QgcGFydD1wYXRoLmpvaW4odG1wLGBwJHtTdHJpbmcoaSkucGFkU3RhcnQoMiwiMCIpfS5tcDRgKTtwYXJ0cy5wdXNoKHBhcnQpOwogICAgY29uc3Qgc3ViVGV4dD13cmFwKGVzYyhzZWcubmFycmF0aW9ufHwiIiksMTYpOwoKICAgIC8vIOugiOydtOyVhOybgyDsooztkZwgKDEwODB4MTkyMCkKICAgIC8vIOygnOuqqSB5PTE3MC8yNzAsIOydtOuvuOyngCDspJHslZkg67C065OcIHk9NTIwfjExMzAoOToxNiDtj63sl5AgMTY6OSDsnbTrr7jsp4ApLCDsnpDrp4kgeT0xNjQwLCDssYTrhJAgeT0xODEwCiAgICBjb25zdCB0aXRsZVRvcD1lc2Moc2gudGl0bGVfdG9wfHwiIiksIHRpdGxlQm90PWVzYyhzaC50aXRsZV9ib3R0b218fCIiKTsKICAgIGNvbnN0IGNoYW5uZWw9ZXNjKGRhdGEucHJvamVjdD8gIuyWtOuluOuTpOydmCDsnITsnbjsoIQiIDogIuyWtOuluOuTpOydmCDsnITsnbjsoIQiKTsKICAgIGNvbnN0IGZmPUZPTlQ/YGZvbnRmaWxlPScke0ZPTlR9JzpgOiIiOwoKICAgIGNvbnN0IGZpbHRlcnM9WwogICAgICAvLyDrsLDqsr0KICAgICAgYGNvbG9yPWM9JHtQLmJnfTpzPSR7V314JHtIfTpkPSR7ZHVyfVtiZ11gLAogICAgICAvLyDsnbTrr7jsp4A6IOqwgOuhnO2PrSDrp57strAg7Iqk7LyA7J28IO2bhCDsgrTsp50g7KSMCiAgICAgIGBbMDp2XXNjYWxlPSR7V306LTEsY3JvcD0ke1d9OjYwODowOjAsc2V0c2FyPTFbaW1nXWAsCiAgICAgIGBbYmddW2ltZ11vdmVybGF5PTA6KEgtaCkvMi0xMjBbdjFdYCwKICAgICAgLy8g7IOB64uoIOygnOuqqSAy7KSECiAgICAgIGBbdjFdZHJhd3RleHQ9JHtmZn10ZXh0PScke3RpdGxlVG9wfSc6Zm9udGNvbG9yPXdoaXRlOmZvbnRzaXplPTc2Ong9KHctdHcpLzI6eT0xNTA6Ym94PTBbdjJdYCwKICAgICAgYFt2Ml1kcmF3dGV4dD0ke2ZmfXRleHQ9JyR7dGl0bGVCb3R9Jzpmb250Y29sb3I9JHtQLmFjY2VudH06Zm9udHNpemU9NzY6eD0ody10dykvMjp5PTI1MDpib3g9MFt2M11gLAogICAgICAvLyDtlZjri6gg7J6Q66eJICjrsJjtiKzrqoUg67CV7IqkKQogICAgICBgW3YzXWRyYXd0ZXh0PSR7ZmZ9dGV4dD0nJHtzdWJUZXh0fSc6Zm9udGNvbG9yPSR7UC5zdWJ9OmZvbnRzaXplPTQ2Ong9KHctdHcpLzI6eT0xNTYwOmxpbmVfc3BhY2luZz0xNDpib3g9MTpib3hjb2xvcj1ibGFja0AwLjQ1OmJveGJvcmRlcnc9MjJbdjRdYCwKICAgICAgLy8g7LGE64SQ66qFCiAgICAgIGBbdjRdZHJhd3RleHQ9JHtmZn10ZXh0PScke2NoYW5uZWx9Jzpmb250Y29sb3I9JHtQLmNoYW5uZWx9OmZvbnRzaXplPTM4Ong9KHctdHcpLzI6eT0xODAwW3ZvdXRdYAogICAgXS5qb2luKCI7Iik7CgogICAgY29uc3QgYXJncz1bIi15IiwiLWxvZ2xldmVsIiwiZXJyb3IiLCItbG9vcCIsIjEiLCItaSIsaW1nXTsKICAgIGlmKGhhc0EpYXJncy5wdXNoKCItaSIsYXVkKTsKICAgIGFyZ3MucHVzaCgiLWZpbHRlcl9jb21wbGV4IixmaWx0ZXJzLCItbWFwIiwiW3ZvdXRdIik7CiAgICBpZihoYXNBKWFyZ3MucHVzaCgiLW1hcCIsIjE6YSIsIi1jOmEiLCJhYWMiLCItYjphIiwiMTkyayIsIi1zaG9ydGVzdCIpOwogICAgZWxzZSBhcmdzLnB1c2goIi1hbiIpOwogICAgYXJncy5wdXNoKCItdCIsU3RyaW5nKGR1ciksIi1yIixTdHJpbmcoRlBTKSwiLWM6diIsImxpYngyNjQiLCItcGl4X2ZtdCIsInl1djQyMHAiLHBhcnQpOwogICAgcHJvY2Vzcy5zdGRvdXQud3JpdGUoYFxyICBbJHtpKzF9LyR7c2guY3V0cy5sZW5ndGh9XSAke2NpZH0gICR7ZHVyfXMgICBgKTsKICAgIGV4ZWNGaWxlU3luYygiZmZtcGVnIixhcmdzLHtzdGRpbzpbImlnbm9yZSIsImlnbm9yZSIsImluaGVyaXQiXX0pOwogIH0pOwoKICBpZighcGFydHMubGVuZ3RoKXtjb25zb2xlLmxvZygiICDinJcg66CM642U65CcIOy7tyDsl4bsnYwiKTtjb250aW51ZTt9CiAgY29uc3QgbGlzdD1wYXRoLmpvaW4odG1wLCJjLnR4dCIpOwogIGZzLndyaXRlRmlsZVN5bmMobGlzdCxwYXJ0cy5tYXAoZj0+YGZpbGUgJyR7cGF0aC5yZXNvbHZlKGYpfSdgKS5qb2luKCJcbiIpKTsKICBjb25zdCBvdXQ9cGF0aC5qb2luKGV4cG9ydERpcixg7Ie87LigXyR7c2guaWR9Lm1wNGApOwogIGV4ZWNGaWxlU3luYygiZmZtcGVnIixbIi15IiwiLWxvZ2xldmVsIiwiZXJyb3IiLCItZiIsImNvbmNhdCIsIi1zYWZlIiwiMCIsIi1pIixsaXN0LAogICAgIi1jOnYiLCJsaWJ4MjY0IiwiLXBpeF9mbXQiLCJ5dXY0MjBwIiwiLWM6YSIsImFhYyIsIi1iOmEiLCIxOTJrIiwiLXIiLFN0cmluZyhGUFMpLG91dF0sCiAgICB7c3RkaW86WyJpZ25vcmUiLCJpZ25vcmUiLCJpbmhlcml0Il19KTsKICBjb25zdCBtYj0oZnMuc3RhdFN5bmMob3V0KS5zaXplLzEwNDg1NzYpLnRvRml4ZWQoMSk7CiAgY29uc29sZS5sb2coYFxuICDinJMgJHtwYXRoLmJhc2VuYW1lKG91dCl9ICgke21ifSBNQilcbmApOwp9Cgpmcy5ybVN5bmModG1wLHtyZWN1cnNpdmU6dHJ1ZSxmb3JjZTp0cnVlfSk7CmNvbnNvbGUubG9nKCLinIUg7Ie87LigIOugjOuNlCDsmYTro4whIik7Cg==";
+  const PROMPT_B64="IyDjgIzslrTrpbjrk6TsnZgg7JyE7J247KCE44CNIOuMgOuzuCDsg53shLEg7ZSE66Gs7ZSE7Yq4Cgo+IOyCrOyaqeuylTog7JWE656YIOyghOyytOulvCDrs7XsgqztlbQgQUnsl5Dqsowg7KO86rOgLCDrp6gg7JWE656YICoqW+yduOusvF0qKiDsnpDrpqzsl5Ag7JuQ7ZWY64qUIOyduOusvOuqheunjCDrhKPsnLzrqbQKPiDrj5nsnbztlZwg7ZiV7Iudwrftkojsp4jsnZgg66Gx7Y+8IOuMgOuzuCgr7J2066+47KeAIOy7tyArIOyHvOy4oCDrjbDsnbTthLAp7J20IOyDneyEseuQqeuLiOuLpC4KCi0tLQoKIyMg7Jet7ZWgCgrri7nsi6DsnYAg7ZWc6rWtIOyXreyCrOyduOusvOydhCDshozqsJztlZjripQg7Jyg7Yqc67iMIOuhse2PvCDssYTrhJAg44CM7Ja066W465Ok7J2YIOychOyduOyghOOAjeydmCDsoITrrLgg7Iuc64KY66as7JikIOyekeqwgOuLpC4K7J20IOyxhOuEkOydmCDsoJXssrTshLHsnYAgKirqsbDsp5Mg7JeG7J20IOynhOyLpOunjCDrp5DtlZjripQg6rKDKirsnbTri6QuIOyWtOumtCDrlYwg7J29642YIOychOyduOyghOyXkOuKlCDsl4brjZgg6rO16rO8KOWKn+mBjinrpbwg66qo65GQIOuztOyXrOykgOuLpC4g6rO87J6l65CcIOq1reu9leydtCDslYTri4jrnbwsIOyCrOyLpOunjOycvOuhnOuPhCDstqnrtoTtnogg6rmK7J2AIOydtOyVvOq4sOulvCDsoITtlZzri6QuCgojIyDsnoXroKUKCuyymOumrO2VoCDsnbjrrLw6ICoqW+yduOusvF0qKgoKLS0tCgojIyDstpzroKUg7ZiV7IudICjrsJjrk5zsi5wg7J20IOq1rOyhsOuhnCkKCmBgYAojIFtO7ZmUXSAo67aA7KCcKSDigJQgKOyduOusvOuqhSkgKHYzIC8g7ZKAIOy7t+umrOyKpO2KuCkKCiMjIPCfjq0g7LqQ66at7YSwIOq4sOykgCDsnbTrr7jsp4AKKOyjvOyduOqzteydmCDsi5zquLDrs4Qg7Jm47ZiV7J2EIOyYgeyWtCDtlITroaztlITtirjroZwg7KCV7J2YLiDsmIg6IOyyreuFhC/rhbjrhYQsIOq1sOuztS/slpHrs7Ug65OxIDJ+M+qwnCkKCiMjIPCflJEg7J6R7JeFIOq3nOy5mQotIOqzte2GtSBzdWZmaXggKOuqqOuToCDsu7cg6rO17Ya1IOyKpO2DgOydvCkKLSDsi5zrjIAg67O07KCVIChb67O07KCVXSDsu7fsl5Ag7LaU6rCAKQotIOy7tyDsnKDtmJUg7ISk66qFICjslbXsu6Qv7YyM7IOdL+uPheumvS/snqzsgqzsmqkpCgojIyDwn5OcIOuMgOuzuCArIOy7tyDrpqzsiqTtirgKKOuCmOugiOydtOyFmCAxfjLrrLjsnqUg64uo6529ICsg6re4IOyCrOydtOyCrOydtCDwn46oIOy7tykKCiMjIPCfk5og7LC46rOgIOyCrOujjAojIyDwn46sIO2OuOynkSDrqZTrqqgKPCEtLSBTSE9SVFMtREFUQSAuLi4gU0hPUlRTLURBVEEgLS0+CmBgYAoKLS0tCgojIyAxLiDrjIDrs7gg67O466y4IOybkOy5mQoKKirrtoTrn4nCt+q1rOyhsCoqCi0gMTXrtoQg67aE65+JLCDqs7XrsLEg7KCc7Jm4IOyVvSAzLDUwMH40LDAwMOyekC4KLSDtg4DsnoTrnbzsnbjCt+yxle2EsCDqtazrtoQg7JeG7J20IOyymOydjOu2gO2EsCDrgZ3quYzsp4Ag7Z2Q66W064qUIOuCtOugiOydtOyFmC4KLSDqtazsobA6IOy9nOuTnOyYpO2UiCDtm4Uo6rCA7J6lIOy2qeqyqeyggeyduCDsnqXrqbQv7IKs7Iuk66GcIOyLnOyekSkg4oaSIOuwsOqyvSDihpIg7JyE6riw7JmAIOq3ueuzteydmCDrsJjrs7Ug4oaSIO2BtOudvOydtOunpeyKpCDihpIg7IS46rOE7IKs7KCBwrfsi5zrjIDsoIEg7J2Y66+4IOKGkiDsl6zsmrQg7J6I64qUIO2VnCDspIQuCi0g64uo65296rO8IOuLqOudvSDsgqzsnbTsl5Ag64uk7J2M7J2EIOq2geq4iO2VmOqyjCDrp4zrk5zripQg65ah67ClIOusuOyepeydhCDsi6zslrQg7J207YOI7J2EIOunieuKlOuLpC4gKOyYiDogIuq3uOufsOuNsCDsp4Tsp5wg66y47KCc64qUIOq3uOuLpOydjOydtOyXiOyKteuLiOuLpC4iKQoKKirtjKntirgg7JuQ7LmZICjsnbQg7LGE64SQ7J2YIOyDneuqhSkqKgotIDHssKgg7IKs66OMwrfqs7Xsi50g6riw66GdwrftlZnqs4Qg7KCV7ISk7JeQIOq3vOqxsO2VnOuLpC4g6rO87J6lwrfssL3snpHCt+y2nOyymCDrtojrqoXsnZgg7Lm0642U6528IOq4iOyngC4KLSDtlZnshKTsnbQg6rCI66as66m0ICLquLDroZ3sl5Ag65Sw66W066m0IiwgIn7rnbzripQg6rKs7ZW064+EIOyeiOyKteuLiOuLpCLroZwg6rWs67aE7ZWc64ukLgotIOyVvOyCrMK37J287ZmU64qUIOuwmOuTnOyLnCAi7KCE7ZW07KeA64qUIOydtOyVvOq4sOuhnOuKlOKApiIsICJ+65286rOgIOyghO2VtOynkeuLiOuLpCLroZwg7Lac7LKYIOyEseqyqeydhCDrsJ3tnozri6QuCi0g7IiY7LmY6rCAIOy2nOyymOuniOuLpCDri6TrpbTrqbQgIuyVvSIsICLslYjtjI4i7Jy866GcIO2RnOq4sO2VnOuLpC4KLSDrjIDrs7gg7ZWY64uo7JeQICoq7LC46rOgIOyCrOujjCDrpqzsiqTtirgqKuulvCDssqjrtoDtlZzri6QuIOymneyWuMK367mE6rO17IudIOuwnOyWuOydgCDqt7gg7ISx6rKp7J2EIOuqheyLnO2VnOuLpC4KCioq66y47LK0ICjsgqzrnozsnbQg7JO0IOuKkOuCjCAvIEFJIO2LsCDsoJzqsbApKioKLSDrj5nsnbwg7Ja066+4IOuwmOuztSDquIjsp4AuICJ+7Iq164uI64ukIC8gfu2WiOyjoCAvIH7snbjrjbDsmpQgLyB+6rGw65Og7JqUIC8gfuyXiOyWtOyalCLrpbwg67OA7KO87ZWc64ukLiDqsIDrgZQg66qF7IKs66GcIOuBneunuuuKlOuLpC4KLSDrrLjsnqUg6ri47J2066W8IOuzgOyjvO2VnOuLpC4g6ri46rKMIOyMk+ydgCDrkqQg7Ken6rKMIOuBiuuKlOuLpC4KLSDquIjsp4A6ICLrv5Drp4wg7JWE64uI6528IC8g6rKw66Gg7KCB7Jy866GcIC8g64aA656N6rKM64+EIiDrgqjrsJwsIOustOyhsOqxtCAz6rCc7JSpIOuzkeugrCDrgpjsl7QuCi0gKirrj4TsuZjCt+yhsOqwgeusuOycvOuhnCDrqYsg67aA66as64qUIOusuOyWtOyytCDquIjsp4AuKiogKCLsobDshKDsl5DshJwsIDE4OTjrhYTsl5DsmpQiIOKdjCkg64uk7YGQIOuCtOugiOydtO2EsOqwgCDsi6TsoJzroZwg7J6F7Jy866GcIOunkO2VmOuTrywg7JmE6rKw65CcIOyekOyXsOyKpOufrOyatCDqtazslrQg66y47J6l7Jy866GcIOyTtOuLpC4KLSDsi5zssq3snpDsl5Dqsowg7KeB7KCRIOunkOydhCDqsbTri6QuICgi7Jes65+s67aE7J20652866m0IOyWtOuWu+qyjCDtlZjshajsnYTquYzsmpQ/IikKLSDstpTsg4HsoIEg7IiY7Iud7Ja0IOuMgOyLoCDqtazssrTsoIEg7Iir7J6QwrfrlJTthYzsnbzsnYQg7JO064ukLiAoIuyXhOyyreuCnCDtmZzslb0iIOKdjCDihpIgIjEy7LKZ7Jy866GcIDEzM+yymeydhCDrp4nslZjri6QiIOKchSkKLSDshozrpqwg64K07Ja0IOydveyXiOydhCDrlYwg7J6Q7Jew7Iqk65+s7Jq0IO2YuO2doSDri6jsnITroZwg7JO064ukLgoKKirqsIDrj4XshLEg7Y+s66e3KioKLSDtlZwg64uo65297J2AIDF+MuusuOyepSDri6jsnITsnZgg7J2Y66+4IOuNqeyWtOumrOuhnCDsp6fqsowg64GK6rOgLCDri6jrnb3rp4jri6Qg7KSE7J2EIOuwlOq+vOuLpC4KLSDquLQg66y464uo7Jy866GcIOutiey5mOyngCDslYrripTri6QuIOuCreuPhSDtmLjtnaHqs7wg7Y647KeRIOyLnCDsu7cg64uo7JyEIO2MjOyVheydtCDsib3rj4TroZ0uCgoqKuuFvOyfgeyggSDsnbjrrLzsnYQg64uk66OwIOuVjCoqCi0g66+47ZmU64+EIOu5hOuCnOuPhCDtlZjsp4Ag7JWK64qU64ukLiDqs7Xqs7zrpbwg66qo65GQLCDsgqzsi6Qg6re464yA66GcIOuLpOujrOuLpC4KLSDspJHrjIDtlZwg67KU7KOEwrfqs7zsmKTrpbwg6rK97KCcIOyEseqzvCDrk7HsnLzroZwg7IOB7IeE7ZWY64qUIO2UhOugiOyehOydhCDsk7Dsp4Ag7JWK64qU64ukLgotIOuyleybkCDtmZXsoJUg7YyQ6rKwwrfqs7Xsi50g6riw66Gd7JeQIOq3vOqxsO2VmOqzoCwg6rCA7ZW0IO2WieychOulvCDrr7jtmZTCt+y2leyGjO2VmOyngCDslYrripTri6QuCi0g6rCA64ql7ZWY66m0ICLqt7gg7J2466y87J2EIOyLrO2MkO2VmOqxsOuCmCDqt7nrs7XtlZwg7Iuc66+8wrfsl63sgqwi66W8IOynhOynnCDso7zsnbjqs7XsnLzroZwg7IK87JWEIOyekOu2gOyLrOydmCDstIjsoJDsnYQg7Jiu6ri064ukLgoKLS0tCgojIyAyLiDsnbTrr7jsp4Ag7Lu3IOybkOy5mSAo7KCc66+464KY7J20IC8g64KY64W467CU64KY64KY7JqpKQoKKirsu7cg67Cw7LmYKioKLSDrgpjroIjsnbTshZggMX4y66y47J6lIOuLqOudveuniOuLpCDsu7cg7ZWY64KY66W8IOybkOy5meycvOuhnCDrp6TtlZHtlZzri6QuIDE167aEIOq4sOykgCDsi6Dqt5wg7IOd7ISxIOy7tyDslb0gNDV+NjDqsJwuCi0g7ZiV7IudOiBg8J+OqCAqKkMwMSBb7Lu37Jyg7ZiVXSBb67O07KCVXSoqIO2VnOq1reyWtCDsnqXrqbQg7ISk66qFYCDri6TsnYwg7KSE7JeQIOuwse2LseycvOuhnCDsmIHslrQg7ZSE66Gs7ZSE7Yq4LgotIOy7tyDsnKDtmJU6CiAgLSAqKlvslbXsu6RdKiogOiDquLDspIAg7J2066+47KeA66W8IOyyqOu2gO2VtCDsg53shLHtlZjripQg7ZW17IusIOyepeuptC4g7J2466y8IOuTseyepSDsi5wg7ZSE66Gs7ZSE7Yq4IOyVnuyXkCBgVXNpbmcgdGhlIG1hbiBpbiB0aGUgYXR0YWNoZWQgaW1hZ2UgYXMgdGhlIG1haW4gY2hhcmFjdGVyLCBrZWVwIGhpcyBmYWNlIGV4YWN0bHkgdGhlIHNhbWUuYAogIC0gKipb7YyM7IOdIOKGkCBDIyNdKiogOiDtlbTri7kg7JW17LukIOydtOuvuOyngOulvCDssqjrtoDtlZwg7LGEIOynp+ydgCDtjrjsp5Eg7ZSE66Gs7ZSE7Yq466GcIOuLpOuluCDslbXquIAv7YG066Gc7KaI7JeFIOyDneyEsS4KICAtICoqW+uPheumvV0qKiA6IOyduOusvCDsl4bripQg67Cw6rK9wrfshoztkojCt+yDgeynlSDsu7cuCiAgLSAqKlvsnqzsgqzsmqldKiogOiDslZ4g7Lu3IOydtOuvuOyngOulvCDsnqztmZzsmqko7L2c67CxKS4g7Zek642U7JeQIOuMgOyDgSDsu7frsojtmLgg7ZGc6riwLgotIOyZgOydtOuTnOyDtyDsgqzsnbTsgqzsnbTsl5Ag6rCQ7KCV7J2EIOuLtOydgCDtgbTroZzspojsl4Uo7IaQwrftkZzsoJXCt+yGjO2SiCnsnYQg64G87Jq064ukLiDrgrTroIjsnbTshZjsnbQg7IKs7Iuk7J2EIOunkO2VoCDrlYwg7ZmU66m07J2AIOqwkOygleydhCDrp5DtlZjqsowuCgoqKu2UhOuhrO2UhO2KuCDsnpHshLHrspUqKgotIO2CpOybjOuTnCDrgpjsl7TsnbQg7JWE64uI6528IOyZhOyEseuQnCDsnpDsl7DslrQg66y47J6l7Jy866GcLiDsiJzshJw6IOyjvOygnCDihpIg7ZaJ64+ZIOKGkiDtmZjqsr0g4oaSIOy5tOuplOudvCDihpIg7Iqk7YOA7J28LgotICoq6rCBIOy7t+ydmCDsmIHslrQg7ZSE66Gs7ZSE7Yq464qUIOuwse2LsSDtlZjrgpgoYCnroZwg6rCQ7Iu864ukLioqIOyCvOykkSDrsLHti7EoYGBgKSDsvZTrk5zruJTroZ3snYQg7JOw7KeAIOunkCDqsoMuICjsmIg6IO2XpOuNlCDspIQg64uk7J2MIOykhOyXkCBg7ZSE66Gs7ZSE7Yq4IOuCtOyaqWAg7ZWcIOykhCkKLSDrr7jrk5zsoIDri4gg7YyM652866+47YSwKC0tYXIsIC0tbm8pIOq4iOyngC4g67mE7Jyo7J2AIOunkOuhnCDtkZztmIQoIjE2Ojkgd2lkZXNjcmVlbiIpLgotICoqInN0b3J5Ym9vayIg64uo7Ja0IOq4iOyngCoqICjsooXsnbQg7Jes67CxwrfssYUg7Y6Y7J207KeAIOuKkOuCjOydhCDsnKDrsJwpLiDrjIDsi6AgImRpZ2l0YWwgaWxsdXN0cmF0aW9uIGluIHdhdGVyY29sb3Igc3R5bGUiLgotIOqzte2GtSBzdWZmaXjsl5Ag67CY65Oc7IucIO2PrO2VqDog7ZmU66m07J2EIOuBneq5jOyngCDssYTsmrDripQg7ZKA67iU66as65OcKCJmaWxsIHRoZSBlbnRpcmUgZnJhbWUgZWRnZS10by1lZGdlIGxpa2UgYSBtb3ZpZSBzdGlsbCwgbm8gd2hpdGUgcGFwZXIgbWFyZ2lucyIpLCDthY3siqTtirjCt+qwhO2MkCDquIDsnpDCt+2FjOuRkOumrMK37ZSE66CI7J6EIOq4iOyngC4KLSDsl7Drj4TCt+yepeyGjMK37Iuc64yAIOqzoOymnSDrlJTthYzsnbwo67O17IudwrfqsbTstpXCt+yGjO2SiMK37LCo65+JKeydhCDrsJjrk5zsi5wg64Sj64qU64ukLgotIDIw7IS46riwIOydtO2bhCDsnqXrqbTsl5DripQg7Iuc64yAIOuztOyglSDstpTqsIA6ICJzZXQgaW4gKOyLnOuMgCkgbW9kZXJuIEtvcmVhLCBOT1QgdGhlIEpvc2VvbiBkeW5hc3R5LiBEbyBub3QgZHJhdyBhbmNpZW50IHBhbGFjZSBhcmNoaXRlY3R1cmUsIGdhdCBoYXRzLCBvciB0b3Brbm90cy4iICjri6gsIO2VnOuztcK36riw7JmA6rCAIOqzoOymneyXkCDrp57ripQg7J6l66m07JeQ64qUIOu2meydtOyngCDslYrripTri6QuKQoKKirsupDrpq3thLAg7J286rSA7ISxICjquLDspIAg7J2066+47KeAIOyytOyduCkqKgotIOyXkO2UvOyGjOuTnCDssqvrqLjrpqzsl5Ag7KO87J246rO17J2YIOyLnOq4sOuzhCDsmbjtmJXsnYQg7KCV7J2Y7ZWcIOq4sOykgCDsnbTrr7jsp4Ag7ZSE66Gs7ZSE7Yq466W8IDJ+M+qwnCDrp4zrk6Dri6QuCi0g7J6R7JeFIOyInOyEnDog6riw7KSAIOydtOuvuOyngOu2gO2EsCDsg53shLEg4oaSIOqwgSDsu7cg7IOd7ISxIOyLnCDtlbTri7kg6riw7KSAIOydtOuvuOyngOulvCDssqjrtoAg4oaSICLsnbQg7J2466y87J2YIOyWvOq1tC/rqLjrpqwv7JWI6rK97J2EIOq3uOuMgOuhnCDsnKDsp4AiIOusuOq1rOuhnCDsi5zsnpEuCgoqKuuvvOqwkCDsnqXrqbQqKgotIOycoO2YiMK37Y+t66Clwrfsi5zsi6DCt+qzoOusuMK37KCE7Yis7J2YIOyngeygkSDrrJjsgqwg6riI7KeALiDruYgg6rGw66asLCDrlqjslrTsp4Qg7YOc6re56riwLCDruYgg7J2Y7J6QLCDruYgg7Iug67CcLCDtnbAg6rWt7ZmULCDstJvrtogsIOy2lOuqqCDrrJjsl60g6rCZ7J2AIOyDgeynlSDsu7fsnLzroZwg7LKY66as7ZWc64ukLgotIOyLpOyhtCDsnbjrrLwo7Yq57Z6IIOqwgO2VtOyekMK37Jm46rWtIOyduOyCrCnsnYAg7Ja86rW07J2EIO2Kueygle2VmOyngCDslYrqsowg7LKY66as7ZWc64ukLgotIOyduOusvOydhCDsmIHsm4XtmZTtlaDsp4Ag7LCo6rCR6rKMIOq3uOumtOyngOuKlCDqt7gg7J2466y87JeQIOuMgO2VnCDsoJXsp4HtlZwg7Y+J6rCA7JeQIOunnuy2mOuLpC4KCioq7Jik67KE66CI7J20KOu2hOychOq4sCDsnoXsnpApIO2DnOq3uCoqCi0g6rCBIOy7tyDtg5zqt7jsl5AgYFtvdmVybGF5Ou2DnOq3uF1g66W8IOuEo+yWtCDsnqXrqbQg67aE7JyE6riw66W8IOyngOygle2VnOuLpC4gKOugjOuNlCDsi5wg7LyE67KI7KaIIOychOyXkCDtlanshLHrkKgpCi0g7IKs7JqpIOqwgOuKpSDtg5zqt7g6IGBkdXN0YCjrqLzsp4DCt+yYpOuemOuQnCDripDrgowsIOq4sOuzuCksIGBvbGRmaWxtYCjrgqHsnYAg7ZWE66aEwrfsmJsg7Iuc64yAKSwgYGVtYmVyc2Ao67aI7YuwwrfsoITsn4Ev7ZmU7J6sKSwgYGJva2VoYCjruZvrp53smrjCt+2ajOyDgS/shJzsoJUpLCBgc25vd2Ao64iIwrfqsqjsmrgv7JO47JO47ZWoKSwgYGxpZ2h0bGVha2Ao67mb7IOYwrfsoITtmZgv7Z2s66edKSwgYHNtb2tlYCjsl7DquLDCt+q4tOyepS/soITsnqUpLCBgbm9uZWAo64GUKS4KLSDsl6zrn6wg6rCc64qUIGBbb3ZlcmxheTpkdXN0K2xpZ2h0bGVha11gLiDsp4DsoJUg7JWIIO2VmOuptCDquLDrs7gg6re466CI7J24wrfruYTrhKTtjIXrp4wg7KCB7Jqp65Cc64ukLgotIOyepeuptCDrp6Tsua0g7JiIOiDrspXsoJXCt+y2lOuqqD1kdXN0LCDsmJsg7Iuc64yAIOuwsOqyvT1vbGRmaWxtLCDsoITsn4HCt+qyqeuPmT1lbWJlcnMvc21va2UsIO2ajOyDgcK37Leo7J6EwrftmZjtmLg9Ym9rZWgsIOyKueumrMK37KCE7ZmYPWxpZ2h0bGVhaywg6rKo7Jq4wrftlZjslbw9c25vdy4KCi0tLQoKIyMgMy4g7Ie87LigIOuNsOydtO2EsCAo64yA67O4IOunqCDrgZ3sl5Ag7ZWE7IiYKQoK64yA67O4IOunqCDrgZ3sl5AgOToxNiDsh7zsuKAg7J6Q64+ZIOyDneyEseydhCDsnITtlZwg67iU66Gd7J2EIOuEo+uKlOuLpC4KCmBgYAo8IS0tIFNIT1JUUy1EQVRBCnsKICAic2hvcnRzIjogWwogICAgewogICAgICAiaWQiOiAic2hvcnQxIiwKICAgICAgInRpdGxlX3RvcCI6ICLtnbDsg4kgMeykhCDsoJzrqqkiLAogICAgICAidGl0bGVfYm90dG9tIjogIuuFuOuegOyDiSDqsJXsobAgMeykhCDsoJzrqqkiLAogICAgICAiY3V0cyI6IFsiQzAxIiwiQzAyIiwiQzA0Il0sCiAgICAgICJob29rX2NhcHRpb24iOiAi7LKrIO2ZlOuptCDqsJXsobAg66y46rWsIiwKICAgICAgImRlc2lnbiI6ICJteXN0ZXJ5IgogICAgfQogIF0KfQpTSE9SVFMtREFUQSAtLT4KYGBgCgotIO2VnCDrjIDrs7jri7kgNDV+NjDstIgg7JWI7JeQIOq4sOyKueyghOqysOydtCDsmYTqsrDrkJjripQg7Ie87LigIDN+NeqwnOulvCDshKDsoJXtlZzri6QuCi0gYGN1dHNg64qUIOuzuOusuCDsu7cgSUTsl5DshJwg6rOg66W464ukLiBgdGl0bGVfdG9wYC9gdGl0bGVfYm90dG9tYOydgCDtm4TtgrnsnbQg6rCV7ZWcIDLspIQg7KCc66qpLgotIGBkZXNpZ25gIO2UhOumrOyFizogYG15c3RlcnlgKOyWtOuRoeqzoCDquLTsnqUg4oCUIOyVlOyCtC/snITquLApLCBgbnVtYmVyc2Ao7Iir7J6QIOqwleyhsCDigJQg6rK97KCcL+yEseqzvCksIGB0cmFnZWR5YCjrrLXsp4HtlZwg7LaU66qoIOKAlCDso73snYwv67mE6re5KSwgYHRyaXVtcGhgKOuwneqzoCDsnpDrtoDsi6wg4oCUIOyXheyggS/sirnrpqwpLgoKLS0tCgojIyA0LiDtjrjsp5Eg66mU66qoCgrrjIDrs7gg64Gd7JeQIO2OuOynkSDssLjqs6Ag66mU66qo66W8IOynp+qyjCDri6jri6Q6IOy9nOuTnOyYpO2UiCDsnYzslYUg7Iuc7J6R7KCQLCDthqQg7KCE7ZmYIOyngOygkCwg7L2c67CxIOyXsOy2nCwg66+86rCQIOyepeuptCDsspjrpqwg67Cp7LmoLCDsi6TsuKEg67aE65+JIOuTsS4KCi0tLQoKIyMjIOKWtiDsp4DquIgg7LKY66as7ZWgIOyduOusvDogKipb7Jes6riw7JeQIOyduOusvOuqhV0qKgoK7JyEIOuqqOuToCDsm5DsuZnsnYQg7KCB7Jqp7ZW0LCDtlbTri7kg7J2466y87J2YIHYzIO2SgCDsu7frpqzsiqTtirgg64yA67O47J2EIOyekeyEse2VmOudvC4K";
+  const $=s=>document.querySelector(s);
+  const E={drop:$("#drop"),file:$("#file"),player:$("#player"),strip:$("#strip"),jump:$("#jump"),total:$("#total"),
+    cutId:$("#cutId"),tags:$("#tags"),prompt:$("#prompt"),preview:$("#preview"),ntext:$("#ntext"),dur:$("#dur"),
+    ttsBtn:$("#ttsBtn"),audio:$("#audio"),prev:$("#prev"),copy:$("#copy"),gen:$("#gen"),toast:$("#toast"),
+    reset:$("#reset"),commonsBody:$("#commonsBody"),err:$("#err"),runImg:$("#runImg"),runVoice:$("#runVoice"),
+    exportBtn:$("#exportBtn"),autoLead:$("#autoLead"),gallery:$("#gallery"),grid:$("#grid"),
+    renderBtn:$("#renderBtn"),renderStatus:$("#renderStatus"),shortsBtn:$("#shortsBtn"),
+    shotKey:$("#shotKey"),shotEnv:$("#shotEnv"),overlayToggle:$("#overlayToggle"),
+    tabWrite:$("#tabWrite"),tabMake:$("#tabMake"),writepane:$("#writepane"),
+    topic:$("#topic"),genres:$("#genres"),claudeModelSel:$("#claudeModelSel"),
+    genScript:$("#genScript"),wpStatus:$("#wpStatus"),wpResult:$("#wpResult"),
+    scriptOut:$("#scriptOut"),copyScript:$("#copyScript"),dlScript:$("#dlScript"),useScript:$("#useScript"),
+    claudeKey:$("#claudeKey"),saveInfo:$("#saveInfo"),retryBtn:$("#retryBtn"),reviewBtn:$("#reviewBtn"),
+    reviewModal:$("#reviewModal"),reviewGrid:$("#reviewGrid"),reviewSum:$("#reviewSum"),closeReview:$("#closeReview"),
+    modal:$("#modal"),settings:$("#settings"),geminiKey:$("#geminiKey"),imgModel:$("#imgModel"),
+    elevenKey:$("#elevenKey"),voiceSel:$("#voiceSel"),voiceId:$("#voiceId"),loadVoices:$("#loadVoices"),
+    voiceModel:$("#voiceModel"),costBox:$("#costBox"),saveSet:$("#saveSet"),cancelSet:$("#cancelSet")};
+
+  let cuts=[],idx=0,commonSuffix="",eraFix="",project="project";
+  let shortsData=[];
+  let geminiKey="",imgModel="gemini-3.1-flash-image-preview";
+  let elevenKey="",voiceId="21m00Tcm4TlvDq8ikWAM",voiceModel="eleven_multilingual_v2";
+  let shotKey="",shotEnv="stage";
+  let claudeKey="",claudeModel="claude-sonnet-4-6";
+  // 장르: 인기·수익 조사 기반 (내러티브 다큐 형식)
+  const GENRES=[
+    {id:"history",   name:"역사 인물",      emoji:"🏛", hint:"한국·세계사 인물의 공과를 정직하게"},
+    {id:"mystery",   name:"미스터리·범죄",  emoji:"🔍", hint:"미해결 사건·실화 범죄, 긴장감 중심"},
+    {id:"event",     name:"역사 사건",      emoji:"⚔️", hint:"전쟁·혁명·격변의 결정적 순간"},
+    {id:"horror",    name:"호러·괴담",      emoji:"👻", hint:"도시전설·괴담, 분위기 중심"},
+    {id:"trivia",    name:"잡학·그거 알아?",emoji:"💡", hint:"호기심 자극하는 깊이 있는 잡학"},
+    {id:"science",   name:"과학·우주",      emoji:"🚀", hint:"우주·과학의 경이, 비주얼 중심"},
+    {id:"nature",    name:"동물·자연",      emoji:"🦊", hint:"놀라운 동물·자연의 세계"},
+    {id:"money",     name:"머니·심리",      emoji:"🧠", hint:"돈의 심리·행동경제, 자기계발"},
+    {id:"finance",   name:"금융·투자",      emoji:"📈", hint:"투자·경제 원리(고수익 CPM)"},
+    {id:"whatif",    name:"만약에(What if)",emoji:"🌀", hint:"가상 시나리오, 호기심 폭발"}
+  ];
+  // 장르별 추가 지시 (공통 형식 위에 덧붙음)
+  const GENRE_PROMPT={
+    history:"주제 유형: 역사 인물. 주인공의 시기별 외형으로 캐릭터 기준 이미지를 만든다.",
+    mystery:"주제 유형: 미스터리·미해결 사건/실화 범죄. 캐릭터 시트 대신 핵심 장소·증거·인물 실루엣의 비주얼 기준을 잡는다. 단서를 하나씩 던지며 긴장을 끝까지 끈다. 자극적 묘사·실존 피해자 특정 금지. 오버레이는 mystery/dust 위주.",
+    event:"주제 유형: 역사 사건(전쟁·혁명·격변). 사건의 흐름을 시간순으로, 결정적 순간을 클라이맥스로. 핵심 장소·집단·상징물의 비주얼 기준을 잡는다. 폭력 직접 묘사 금지(상징 컷). 오버레이는 smoke/embers/oldfilm.",
+    horror:"주제 유형: 괴담·도시전설. 사실과 전승을 구분('전해지는 이야기'). 분위기와 여백 중심, 점프스케어식 자극 배제. 어두운 톤. 오버레이는 mystery/smoke/dust.",
+    trivia:"주제 유형: 잡학. 하나의 흥미로운 주제를 깊이 파고든다. 리스트 나열이 아니라 '왜?'를 따라가는 내러티브로. 비주얼은 개념을 보여주는 일러스트.",
+    science:"주제 유형: 과학·우주. 경이감을 주는 비주얼이 핵심. 어려운 개념을 비유로 쉽게. 정확한 사실 기반. 오버레이는 bokeh/lightleak.",
+    nature:"주제 유형: 동물·자연. 한 동물/현상의 놀라운 면을 스토리로. 생생한 자연 비주얼. 오버레이는 bokeh/dust.",
+    money:"주제 유형: 돈의 심리·행동경제. 시청자의 일상 경험과 연결. 사례→원리→교훈 구조. 비주얼은 상황 일러스트.",
+    finance:"주제 유형: 금융·투자 원리. 정확성·팩트체크 최우선. 차트·데이터 비주얼. 투자 권유가 아닌 원리 설명. 오버레이는 numbers(grain만).",
+    whatif:"주제 유형: 가상 시나리오('만약 ~했다면'). 전제→전개→점점 극단으로→반전 또는 교훈. 호기심을 끝까지. 비주얼은 상상 장면."
+  };
+  let genre="history";
+  const images={};         // id -> dataURL
+  const audios={};         // id -> {blob, url, dur, chars}
+  let running=false,stopReq=false,lastFailedKind="img";
+  const IMG_PRICE={"gemini-3-pro-image-preview":0.134,"gemini-3.1-flash-image-preview":0.03};
+
+  /* ---------- PARSER (narration + cut) ---------- */
+  function grab(t,re){const m=t.match(re);return m?m[1].trim():"";}
+  function cleanNarr(block){
+    return block.split('\n').map(l=>l.trim())
+      .filter(l=>l && !l.startsWith('>') && !l.startsWith('🎨') && !l.startsWith('#') && !l.startsWith('---') && !l.startsWith('**') && !l.startsWith('※') && !l.startsWith('|') && !/^\[/.test(l))
+      .join('\n').trim();
+  }
+  function parse(text){
+    // 삼중 백틱(```) 코드블록을 단일 백틱(`)으로 정규화 — 두 형식 모두 지원
+    text=text.replace(/```[^\n]*\r?\n([\s\S]*?)```/g,(m,c)=>'`'+c.replace(/`/g,"'").trim()+'`');
+    commonSuffix=grab(text,/공통[^\n]*suffix[^\n]*\n+`([^`]+)`/i)||grab(text,/공통[^\n]*\n+`([^`]+)`/);
+    eraFix=grab(text,/시대\s*보정[^\n]*\n+`([^`]+)`/);
+    // 쇼츠 데이터 파싱
+    shortsData=[];
+    const sm=text.match(/<!--\s*SHORTS-DATA\s*([\s\S]*?)\s*SHORTS-DATA\s*-->/);
+    if(sm){try{const sd=JSON.parse(sm[1]);shortsData=sd.shorts||[];}catch(e){console.warn("SHORTS-DATA 파싱 실패",e);}}
+    const tm=text.match(/^#\s*(.+)$/m);project=tm?tm[1].replace(/[\[\]#]/g,'').trim().slice(0,40):"project";
+
+    // FORMAT 1: (C1 : prompt) — image-only, no narration
+    const paren=[...text.matchAll(/\((C\d+|A0-[\w가-힣]+|B0-[\w가-힣]+)\s*:\s*([\s\S]*?)\)\s*(?=\n\s*\(|\s*$)/g)];
+    if(paren.length){
+      return paren.map(m=>({id:m[1].trim(),tags:guessTags(m[1].trim(),m[2]),prompt:m[2].trim().replace(/\s+/g,' '),
+        narr:"",derive:null,ref:guessRef(m[1].trim(),m[2])}));
+    }
+
+    // FORMAT 2: v3 markdown — narration text then 🎨 cut
+    // limit to the 대본 body if present
+    let body=text;const bm=text.match(/##\s*📜[^\n]*\n([\s\S]*?)(?=\n##\s*📊|\n##\s*📚|$)/);
+    if(bm)body=bm[1];
+
+    const list=[];
+    // 기준 이미지: "D0-군복" 형식 + "기준A — 청년" 형식 둘 다 지원
+    const refRe=/\*\*\s*((?:[A-Z]0[-\s]|기준\s*[A-Z가-힣])[^\n*]*?)\*\*\s*[^\n]*\n+`([^`]+)`/g;let r;
+    while((r=refRe.exec(text))){
+      let raw=r[1].trim();
+      // id 정규화: "기준A — 청년 김구" → "기준A", "D0-군복 (...)" → "D0-군복"
+      let id=/^기준/.test(raw)?raw.replace(/\s*[—\-–].*$/,'').replace(/\s+/g,'').slice(0,8):raw.split(/[\s(（]/)[0];
+      let pr=r[2].trim().replace(/\+\s*공통\s*suffix\s*/gi,'').replace(/\+\s*$/,'').trim();
+      if(commonSuffix)pr+=" "+commonSuffix;
+      list.push({id,tags:["기준"],prompt:pr.replace(/\s+/g,' ').trim(),narr:"",derive:null,ref:null});
+    }
+
+    const cutRe=/🎨\s*\*\*\s*(C\d+|\[장면[^\]]*\])\s*([^*\n]*)\*\*([^\n]*)\n(?:>?\s*`([^`]+)`)?/g;
+    let m,lastEnd=0;
+    while((m=cutRe.exec(body))){
+      const narrRaw=body.slice(lastEnd,m.index);
+      lastEnd=cutRe.lastIndex;
+      let id=m[1].trim().replace(/[\[\]]/g,'').replace(/장면\s*/,'S');
+      const tagStr=m[2]||"";
+      const headerDesc=m[3]||"";
+      const promptRaw=m[4]||"";
+      const tags=[...tagStr.matchAll(/\[([^\]]+)\]/g)].map(t=>t[1].trim());
+      let derive=null;const dm=tagStr.match(/파생\s*←\s*(C\d+)/);if(dm)derive=dm[1];
+      let explicitRef=null;
+      const rm=tagStr.match(/([A-Z]0[-\s][가-힣\w]+)\s*사용/);
+      if(rm)explicitRef=rm[1].replace(/\s/,'-');
+      else{const rm2=tagStr.match(/기준\s*([A-Z가-힣])/);if(rm2)explicitRef="기준"+rm2[1];}
+      const isReuse=/재사용/.test(tagStr);
+      // reuse cuts have no backtick prompt; their callback target sits in the header desc
+      let reuseRef=null;if(isReuse){const cm=headerDesc.match(/C\d+/);if(cm)reuseRef=cm[0];}
+      const needEra=/보정/.test(tagStr)||/시대 보정/.test(promptRaw);
+      // 오버레이 태그: [overlay:dust] / [오버레이:dust+lightleak] / [overlay:none]
+      let overlay=null;const om=tagStr.match(/(?:overlay|오버레이)\s*[:：]\s*([a-zA-Z가-힣+_\s]+)/i);
+      if(om)overlay=om[1].trim().replace(/\s*\+\s*/g,'+').replace(/\s+/g,'');
+      let prompt=promptRaw.replace(/\+\s*시대\s*보정\s*/g,'').replace(/\+\s*공통\s*suffix\s*/gi,'').replace(/\+\s*$/,'').trim();
+      let full=prompt;if(needEra&&eraFix)full+=" "+eraFix;if(commonSuffix)full+=" "+commonSuffix;
+      list.push({id,tags,prompt:isReuse?"":full.replace(/\s+/g,' ').trim(),overlay,
+        narr:cleanNarr(narrRaw),derive,ref:derive||explicitRef||reuseRef||guessRef(id,prompt),reuse:isReuse});
+    }
+    return list;
+  }
+  function guessTags(id,p){const t=[];if(/^[A-Z]0-/.test(id))t.push("기준");if(/attached image/i.test(p)&&!/^[A-Z]0-/.test(id))t.push("파생");if(/NOT the Joseon|mid-(to-late-)?20th/i.test(p))t.push("보정");if(!t.length)t.push("독립");return t;}
+  function guessRef(id,p){if(/^[A-Z]0-/.test(id))return null;if(!/attached image/i.test(p))return null;
+    if(/young|hanbok|durumagi|topknot|teacher|early 20s|mid 30s|mid 40s|군복|sunglasses|general/i.test(p)){
+      if(/B0/.test(p)||/general|sunglasses|uniform/i.test(p))return "B0-군복";
+      return /B0/.test(id)?"B0-청년교사":"A0-young";
+    }
+    return guessRefOld(p);
+  }
+  function guessRefOld(p){return /elderly|white hair|suit/i.test(p)?(document.body.dataset.era==="b"?"B0-대통령":"A0-old"):"A0-old";}
+
+  /* ---------- RENDER ---------- */
+  const TAGMAP=[{re:/앵커|기준/,cls:"anchor"},{re:/파생/,cls:"derive"},{re:/독립/,cls:"solo"},{re:/보정/,cls:"era"},{re:/재사용/,cls:"ref"}];
+  const tagClass=t=>(TAGMAP.find(x=>x.re.test(t))||{cls:"solo"}).cls;
+  function buildStrip(){E.strip.innerHTML="";cuts.forEach((_,i)=>{const f=document.createElement("div");f.className="frame";f.dataset.i=i;E.strip.appendChild(f);});}
+  function refreshStrip(){[...E.strip.children].forEach((f,i)=>{const c=cuts[i];f.className="frame"+(images[c.id]||(c.reuse&&images[c.ref])?" img":"")+(audios[c.id]?" aud":"")+(i===idx?" cur":"");});}
+
+  function render(){
+    const c=cuts[idx];
+    if(document.activeElement!==E.jump)E.jump.value=idx+1;
+    E.cutId.innerHTML=c.id.startsWith("C")?"C<em>"+c.id.slice(1)+"</em>":"<em>"+c.id+"</em>";
+    E.tags.innerHTML="";c.tags.forEach(t=>{const s=document.createElement("span");s.className="tag "+tagClass(t);s.textContent=t;E.tags.appendChild(s);});
+    // narration
+    if(c.narr){E.ntext.textContent=c.narr;E.ntext.classList.remove("empty");E.ttsBtn.style.display="";}
+    else{E.ntext.textContent=c.reuse?"(재사용 컷 — 이미지는 "+(c.ref||"앞 컷")+" 재활용)":"(이 컷에는 나레이션이 없습니다)";E.ntext.classList.add("empty");E.ttsBtn.style.display=c.narr?"":"none";}
+    // audio
+    const au=audios[c.id];
+    if(au){E.audio.src=au.url;E.audio.style.display="";E.dur.textContent="▶ "+au.dur.toFixed(1)+"초";}
+    else{E.audio.style.display="none";E.dur.textContent=c.narr?"":"";}
+    E.ttsBtn.textContent=au?"🔊 다시 생성":"🔊 음성 생성";
+    E.ttsBtn.disabled=!c.narr||!elevenKey;
+    if(!elevenKey&&c.narr)E.ttsBtn.textContent="🔊 음성 (키 필요)";
+    // prompt + preview
+    if(c.reuse){E.prompt.textContent="(재사용 컷 — 새 이미지 생성 안 함. "+(c.ref||"앞 컷")+" 이미지를 그대로 사용)";E.gen.style.display="none";}
+    else{E.prompt.textContent=c.prompt;E.gen.style.display="";E.gen.textContent=geminiKey?"✦ 이미지 생성하고 다음":"✦ 이미지 (키 필요)";}
+    E.prev.disabled=idx===0;
+    renderPreview();refreshStrip();E.prompt.scrollTop=0;E.ntext.scrollTop=0;
+    const cf=E.strip.children[idx];if(cf)cf.scrollIntoView({block:"nearest",inline:"center"});
+  }
+  function renderPreview(){
+    const c=cuts[idx];let img=images[c.id]||(c.reuse&&images[c.ref]);
+    E.preview.innerHTML="";
+    if(img){const im=document.createElement("img");im.src=img;E.preview.appendChild(im);
+      if(!c.reuse){const a=document.createElement("a");a.className="dl";a.textContent="↓ PNG";a.href=img;a.download=c.id+".png";E.preview.appendChild(a);}}
+    else{const d=document.createElement("div");d.className="ph";d.innerHTML="생성하면 여기에<br>이미지가 표시됩니다";E.preview.appendChild(d);}
+  }
+  function setImgBusy(b){E.gen.classList.toggle("busy",b);E.gen.disabled=b;if(b){E.preview.innerHTML="";const s=document.createElement("div");s.className="spin";E.preview.appendChild(s);}}
+
+  /* ---------- GEMINI ---------- */
+  function dataURLtoInline(d){const m=d.match(/^data:([^;]+);base64,(.+)$/);return m?{mime:m[1],data:m[2]}:null;}
+  async function genImage(cut){
+    if(!geminiKey)throw new Error("Gemini 키가 없습니다.");
+    const parts=[{text:cut.prompt}];
+    if(cut.ref&&images[cut.ref]){const inl=dataURLtoInline(images[cut.ref]);if(inl)parts.unshift({inline_data:{mime_type:inl.mime,data:inl.data}});}
+    const body={contents:[{parts}],generationConfig:{responseModalities:["IMAGE"],imageConfig:{aspectRatio:"16:9"}}};
+    const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+imgModel+":generateContent",
+      {method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":geminiKey},body:JSON.stringify(body)});
+    if(!res.ok){let msg="HTTP "+res.status;try{const j=await res.json();msg=j.error&&j.error.message||msg;}catch(e){}
+      if(res.status===429)msg="이미지 요청 한도 초과(429).";throw new Error(msg);}
+    const j=await res.json();const cand=j.candidates&&j.candidates[0];
+    if(!cand)throw new Error("응답이 비었습니다.");
+    if(cand.finishReason==="SAFETY"||cand.finishReason==="PROHIBITED_CONTENT")throw new Error("안전 필터 차단. 프롬프트 완화 필요.");
+    for(const p of (cand.content&&cand.content.parts)||[]){const d=p.inlineData||p.inline_data;if(d&&d.data)return "data:"+(d.mimeType||d.mime_type||"image/png")+";base64,"+d.data;}
+    throw new Error("이미지를 받지 못했습니다.");
+  }
+  async function genImageCurrent(advance){
+    const c=cuts[idx];if(c.reuse)return advance&&idx<cuts.length-1&&(idx++,render());
+    E.err.textContent="";setImgBusy(true);
+    try{const d=await genImage(c);images[c.id]=d;addCell(c.id);setImgBusy(false);renderPreview();refreshStrip();updateLead();scheduleSave();showToast(c.id+" 이미지 생성됨");
+      if(advance&&idx<cuts.length-1){idx++;render();}}
+    catch(e){setImgBusy(false);renderPreview();E.err.textContent="⚠ "+e.message;showToast("이미지 실패",true);}
+    finally{E.gen.disabled=false;}
+  }
+
+  /* ---------- ELEVENLABS ---------- */
+  async function genVoice(cut){
+    if(!elevenKey)throw new Error("ElevenLabs 키가 없습니다.");
+    if(!cut.narr)throw new Error("나레이션이 없습니다.");
+    if(!voiceId)throw new Error("음성이 선택되지 않았습니다. ⚙ 설정 → '목록 불러오기'로 음성을 고르세요.");
+    const res=await fetch("https://api.elevenlabs.io/v1/text-to-speech/"+voiceId+"?output_format=mp3_44100_128",
+      {method:"POST",headers:{"xi-api-key":elevenKey,"Content-Type":"application/json","Accept":"audio/mpeg"},
+       body:JSON.stringify({text:cut.narr,model_id:voiceModel,voice_settings:{stability:0.5,similarity_boost:0.75,style:0}})});
+    if(!res.ok){let msg="HTTP "+res.status;try{const j=await res.json();msg=(j.detail&&(j.detail.message||j.detail))||msg;}catch(e){}
+      if(res.status===401)msg="ElevenLabs 키가 올바르지 않습니다.";
+      if(res.status===404)msg="이 음성 ID를 계정에서 찾을 수 없습니다. ⚙ 설정 → '목록 불러오기'로 음성을 선택하세요.";
+      if(res.status===422)msg="요청 형식 오류(음성 ID/모델 확인).";throw new Error(typeof msg==="string"?msg:JSON.stringify(msg));}
+    const buf=await res.arrayBuffer();
+    const dur=await measureDuration(buf.slice(0));
+    const blob=new Blob([buf],{type:"audio/mpeg"});
+    return {blob,url:URL.createObjectURL(blob),dur,chars:cut.narr.length};
+  }
+  function measureDuration(arrBuf){
+    return new Promise(res=>{
+      try{const Ctx=window.AudioContext||window.webkitAudioContext;const ctx=new Ctx();
+        ctx.decodeAudioData(arrBuf,b=>{const d=b.duration;ctx.close();res(d);},()=>{ctx.close();res(estimateDur());});
+      }catch(e){res(estimateDur());}
+    });
+  }
+  function estimateDur(){return 0;} // fallback handled later
+  async function genVoiceCurrent(advance){
+    const c=cuts[idx];if(!c.narr){showToast("나레이션 없음",true);return;}
+    E.err.textContent="";E.ttsBtn.classList.add("busy");E.ttsBtn.disabled=true;E.ttsBtn.textContent="생성 중…";
+    try{const a=await genVoice(c);if(audios[c.id])URL.revokeObjectURL(audios[c.id].url);audios[c.id]=a;
+      addCell(c.id);render();updateLead();scheduleSave();showToast(c.id+" 음성 "+a.dur.toFixed(1)+"초");
+      if(advance&&idx<cuts.length-1){idx++;render();}}
+    catch(e){E.err.textContent="⚠ "+e.message;showToast("음성 실패",true);}
+    finally{E.ttsBtn.classList.remove("busy");render();}
+  }
+
+  /* ---------- RUN ALL ---------- */
+  async function runAll(kind){
+    if(running){stopReq=true;return;}
+    if(kind==="img"&&!geminiKey){openModal();return;}
+    if(kind==="voice"&&!elevenKey){openModal();return;}
+    const todo=cuts.filter(c=> kind==="img" ? (!c.reuse&&!images[c.id]) : (c.narr&&!audios[c.id]) );
+    if(!todo.length){showToast("이미 모두 생성됨");return;}
+    if(kind==="img"){const est=(todo.length*IMG_PRICE[imgModel]).toFixed(2);
+      if(!confirm(todo.length+"개 컷 이미지를 생성합니다. 예상 약 $"+est+"\n진행할까요?"))return;}
+    else{const chars=todo.reduce((s,c)=>s+c.narr.length,0);
+      if(!confirm(todo.length+"개 컷 음성을 생성합니다. 약 "+chars+"자(크레딧).\n진행할까요?"))return;}
+    running=true;stopReq=false;
+    const btn=kind==="img"?E.runImg:E.runVoice;btn.textContent="■ 중지";btn.classList.add("stop");
+    E.retryBtn.style.display="none";
+    const failed=[];
+    for(let i=0;i<cuts.length;i++){
+      if(stopReq)break;const c=cuts[i];
+      if(kind==="img"){if(c.reuse||images[c.id])continue;idx=i;render();setImgBusy(true);
+        try{images[c.id]=await genImage(c);addCell(c.id);setImgBusy(false);renderPreview();refreshStrip();updateLead();scheduleSave();}
+        catch(e){setImgBusy(false);renderPreview();failed.push(c.id);E.err.textContent="⚠ "+c.id+": "+e.message;if(/한도|429|키/.test(e.message))break;}
+        await sleep(1200);
+      }else{if(!c.narr||audios[c.id])continue;idx=i;render();E.ttsBtn.classList.add("busy");E.ttsBtn.textContent="생성 중…";
+        try{audios[c.id]=await genVoice(c);addCell(c.id);render();updateLead();scheduleSave();}
+        catch(e){failed.push(c.id);E.err.textContent="⚠ "+c.id+": "+e.message;if(/401|키|한도/.test(e.message)){render();break;}render();}
+        await sleep(700);
+      }
+    }
+    running=false;btn.textContent=kind==="img"?"▶ 이미지 일괄":"▶ 음성 일괄";btn.classList.remove("stop");
+    // 완료 후 실패분 집계 (중단 포함, 아직 안 만들어진 것 전부)
+    const remain=cuts.filter(c=> kind==="img" ? (!c.reuse&&!images[c.id]) : (c.narr&&!audios[c.id]) ).map(c=>c.id);
+    if(remain.length){
+      lastFailedKind=kind;
+      E.retryBtn.style.display="";E.retryBtn.textContent="↻ 실패 "+remain.length+"개 다시";
+      E.err.textContent="⚠ "+remain.length+"개 미완성: "+remain.slice(0,8).join(", ")+(remain.length>8?" 외":"")+" — '↻ 실패 다시'로 재시도하세요.";
+      showToast(remain.length+"개 실패 — 다시 시도 가능");
+    }else{
+      E.retryBtn.style.display="none";
+      showToast(stopReq?"중지됨":(kind==="img"?"이미지 완료 🎬":"음성 완료 🔊"));
+    }
+  }
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+  /* ---------- EXPORT TIMELINE + ASSETS ---------- */
+  async function exportAll(){
+    if(typeof JSZip==="undefined"){showToast("zip 라이브러리 로드 실패",true);return;}
+    const haveImg=Object.keys(images).length,haveAud=Object.keys(audios).length;
+    if(!haveImg&&!haveAud){showToast("생성된 에셋이 없습니다",true);return;}
+    E.exportBtn.textContent="묶는 중…";E.exportBtn.disabled=true;
+    try{
+      const zip=new JSZip();
+      const imgDir=zip.folder("images"),audDir=zip.folder("audio");
+      const segs=[];let t=0,order=0;
+      for(const c of cuts){
+        const imgId=c.reuse?(c.ref||""):c.id;
+        const imgData=images[imgId];
+        const au=audios[c.id];
+        const imgFile=imgData?(imgId+".png"):null;
+        const audFile=au?(c.id+".mp3"):null;
+        if(imgData&&!c.reuse&&!zip.file("images/"+imgFile))imgDir.file(imgFile,imgData.split(",")[1],{base64:true});
+        if(au)audDir.file(audFile,au.blob);
+        const dur=au?+au.dur.toFixed(2):(c.narr?estimateFromText(c.narr):3);
+        const seg={order:order++,id:c.id,type:c.tags.join("/"),reuse:!!c.reuse,
+          narration:c.narr||"",image:imgFile,audio:audFile,duration:dur,start:+t.toFixed(2),
+          overlay: E.overlayToggle && !E.overlayToggle.checked ? "off" : (c.overlay||null)};
+        segs.push(seg);t+=dur;
+      }
+      const timeline={project,created:new Date().toISOString(),
+        voice:{provider:"elevenlabs",voice_id:voiceId,model:voiceModel},
+        image:{provider:"gemini",model:imgModel},
+        total_duration:+t.toFixed(2),segment_count:segs.length,
+        note:"duration은 생성된 음성 길이(초). 음성 없는 컷은 글자수 기반 추정. 로컬 ffmpeg에서 image를 duration만큼 표시(켄번즈) 후 audio와 합성.",
+        segments:segs};
+      zip.file("timeline.json",JSON.stringify(timeline,null,2));
+      // ---- Shotstack edit.json (실측 길이 기반) ----
+      let savedBase="";try{savedBase=localStorage.getItem("ss_base")||"";}catch(e){}
+      let base=(window.prompt("Shotstack용 에셋 호스팅 베이스 URL을 입력하세요.\n(images/ 와 audio/ 폴더가 놓일 위치. 비우면 placeholder)",
+        savedBase||"https://YOUR_USERNAME.github.io/YOUR_REPO/assets")||"https://YOUR_USERNAME.github.io/YOUR_REPO/assets").replace(/\/+$/,"");
+      try{localStorage.setItem("ss_base",base);}catch(e){}
+      const KEN=["zoomIn","zoomOut","slideLeft","slideRight","slideUp","zoomIn"];
+      const imgClips=[],audClips=[];let kt=0,ki=0;
+      for(const c of cuts){
+        if(!c.narr)continue;                       // 나레이션 없는 컷(기준 이미지 등)은 영상 제외
+        const au=audios[c.id];
+        const len=au?+au.dur.toFixed(2):estimateFromText(c.narr);
+        const imgId=c.reuse?(c.ref||c.id):c.id;
+        imgClips.push({asset:{type:"image",src:base+"/images/"+imgId+".png"},
+          start:+kt.toFixed(2),length:len,effect:KEN[ki%KEN.length],transition:{in:"fade",out:"fade"}});
+        if(au)audClips.push({asset:{type:"audio",src:base+"/audio/"+c.id+".mp3"},start:+kt.toFixed(2),length:len});
+        kt=+(kt+len).toFixed(2);ki++;
+      }
+      const shotstack={timeline:{background:"#000000",tracks:[{clips:imgClips},{clips:audClips}]},
+        output:{format:"mp4",size:{width:1920,height:1080},fps:25}};
+      zip.file("shotstack.json",JSON.stringify(shotstack,null,2));
+      // narration.txt
+      zip.file("narration.txt",cuts.filter(c=>c.narr).map(c=>c.narr).join("\n\n"));
+      // ---- 자막 .srt (영상 타임라인 기준: 나레이션 있는 컷만, 실제 영상 순서대로) ----
+      function srtTime(sec){const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=Math.floor(sec%60),ms=Math.round((sec-Math.floor(sec))*1000);
+        return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+","+String(ms).padStart(3,"0");}
+      // 긴 나레이션은 문장 단위로 쪼개 가독성 좋은 자막으로
+      function splitCaption(text,dur){
+        const parts=text.split(/(?<=[.!?。…])\s+|(?<=다\.)\s*|(?<=요\.)\s*|\n+/).map(s=>s.trim()).filter(Boolean);
+        if(parts.length<=1)return [{t:text,d:dur}];
+        const total=parts.reduce((a,p)=>a+p.length,0)||1;
+        return parts.map(p=>({t:p,d:Math.max(1.0,dur*(p.length/total))}));
+      }
+      let srt="",si=0,vt=0;
+      for(const c of cuts){
+        if(!c.narr)continue;                       // 영상에 안 들어가는 컷 제외(타임라인 일치)
+        const au=audios[c.id];
+        const len=au?+au.dur.toFixed(2):estimateFromText(c.narr);
+        const caps=splitCaption(c.narr,len);
+        let ct=vt;
+        for(const cap of caps){
+          si++;
+          srt+=si+"\n"+srtTime(ct)+" --> "+srtTime(ct+cap.d)+"\n"+cap.t+"\n\n";
+          ct+=cap.d;
+        }
+        vt=+(vt+len).toFixed(2);
+      }
+      zip.file("자막.srt",srt);
+      // 더블클릭 실행용 .command (맥) — 터미널 자동으로 열려 렌더
+      const cmd =
+        "#!/bin/bash\n"+
+        "# 이 파일을 더블클릭하면 같은 폴더의 에셋으로 영상을 렌더합니다.\n"+
+        "cd \"$(dirname \"$0\")\"\n"+
+        "echo \"\"\n"+
+        "echo \"==============================\"\n"+
+        "echo \"  영상 렌더를 시작합니다\"\n"+
+        "echo \"==============================\"\n"+
+        "echo \"\"\n"+
+        "if ! command -v node >/dev/null 2>&1; then echo \"✗ Node.js가 없습니다. 터미널에 brew install node 를 먼저 실행하세요.\"; read -p \"엔터를 누르면 닫힙니다...\"; exit 1; fi\n"+
+        "if ! command -v ffmpeg >/dev/null 2>&1; then echo \"✗ ffmpeg가 없습니다. 터미널에 brew install ffmpeg 를 먼저 실행하세요.\"; read -p \"엔터를 누르면 닫힙니다...\"; exit 1; fi\n"+
+        "if [ ! -f render_local.js ]; then echo \"✗ render_local.js 가 이 폴더에 없습니다. 같이 넣어주세요.\"; read -p \"엔터를 누르면 닫힙니다...\"; exit 1; fi\n"+
+        "node render_local.js .\n"+
+        "echo \"\"\n"+
+        "read -p \"완료되었습니다. 엔터를 누르면 창이 닫힙니다...\"\n";
+      zip.file("렌더하기.command",cmd,{unixPermissions:"755"});
+      // 사용법
+      zip.file("사용법.txt",
+        "■ 가장 쉬운 방법 (터미널 명령어 불필요)\n"+
+        "  1) 이 폴더 안에 render_local.js 파일을 같이 넣으세요.\n"+
+        "  2) '렌더하기.command' 파일을 더블클릭하세요.\n"+
+        "  3) 터미널이 자동으로 열리고 영상이 만들어집니다.\n"+
+        "  4) 완성된 mp4가 이 폴더에 생깁니다.\n\n"+
+        "  ※ 처음 더블클릭 시 '확인되지 않은 개발자' 경고가 뜨면:\n"+
+        "    파일을 control+클릭 → '열기' → '열기' 를 누르면 이후로는 바로 실행됩니다.\n\n"+
+        "■ 수동 명령어 (위 방법이 안 될 때 복사해서 사용)\n"+
+        "  cd 로 이 폴더에 들어간 뒤:\n"+
+        "  node render_local.js .\n\n"+
+        "  출력 파일명을 직접 지정하려면:\n"+
+        "  node render_local.js . 내영상.mp4\n");
+      // render_local.js 자동 포함 (별도로 챙길 필요 없음)
+      try{zip.file("render_local.js",Uint8Array.from(atob(RENDER_JS_B64),c=>c.charCodeAt(0)));}catch(e){}
+      // simple ffmpeg helper script
+      zip.file("README.txt",
+        "프롬프트 슬레이트 내보내기\n\n"+
+        "- images/  : 컷별 PNG (16:9)\n- audio/   : 컷별 MP3 내레이션\n- timeline.json  : ffmpeg용 컷 순서·길이·매핑\n- shotstack.json : Shotstack Edit API용 (이미지+오디오 트랙, 켄번즈)\n- narration.txt  : 전체 나레이션\n\n"+
+        "[Shotstack] images/와 audio/를 공개 URL로 호스팅한 뒤,\n  shotstack.json의 src 베이스 URL이 그 위치를 가리키는지 확인 → POST https://api.shotstack.io/v1/render\n\n"+
+        "[ffmpeg] timeline.json의 각 segment를 순서대로:\n  image를 duration초 표시(켄번즈) → audio를 깔고 → concat.\n"+
+        "reuse=true인 컷은 image가 앞 컷과 동일 파일명을 가리킵니다.\n");
+      const blob=await zip.generateAsync({type:"blob"});
+      const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+      a.download=project.replace(/\s+/g,"_")+"_export.zip";a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+      showToast("내보내기 완료 ⤓ (자막.srt 포함)");
+    }catch(e){E.err.textContent="⚠ 내보내기 오류: "+e.message;showToast("내보내기 실패",true);}
+    finally{E.exportBtn.textContent="⤓ 타임라인 내보내기";E.exportBtn.disabled=false;}
+  }
+  function estimateFromText(t){return Math.max(2,Math.round(t.replace(/\s/g,"").length/5.5*10)/10);} // ~5.5 char/sec ko
+
+  /* ---------- SHORTS EXPORT ---------- */
+  async function exportShorts(){
+    if(typeof JSZip==="undefined"){showToast("zip 라이브러리 로드 실패",true);return;}
+    if(!shortsData.length){showToast("이 대본에 쇼츠 정보가 없습니다",true);return;}
+    // 쇼츠에 쓰이는 컷만 모음
+    const need=new Set();shortsData.forEach(s=>(s.cuts||[]).forEach(c=>need.add(c)));
+    const haveImg=[...need].filter(id=>images[id]||(()=>{const c=cuts.find(x=>x.id===id);return c&&c.reuse&&images[c.ref];})()).length;
+    if(!haveImg){showToast("쇼츠 컷 이미지를 먼저 생성하세요",true);return;}
+    E.shortsBtn.textContent="묶는 중…";E.shortsBtn.disabled=true;
+    try{
+      const zip=new JSZip();
+      const imgDir=zip.folder("images"),audDir=zip.folder("audio");
+      const segMap={};
+      // 필요한 컷의 에셋 + 세그먼트 정보 수집
+      for(const id of need){
+        const c=cuts.find(x=>x.id===id);if(!c)continue;
+        const imgId=c.reuse?(c.ref||id):id;
+        const imgData=images[imgId];
+        if(imgData&&!zip.file("images/"+imgId+".png"))imgDir.file(imgId+".png",imgData.split(",")[1],{base64:true});
+        const au=audios[id];
+        if(au)audDir.file(id+".mp3",au.blob);
+        segMap[id]={id,image:(imgData?imgId+".png":null),audio:au?id+".mp3":null,
+          duration:au?+au.dur.toFixed(2):estimateFromText(c.narr||""),narration:c.narr||""};
+      }
+      const shortsJson={project,created:new Date().toISOString(),
+        shorts:shortsData,segments:Object.values(segMap)};
+      zip.file("shorts.json",JSON.stringify(shortsJson,null,2));
+      // 렌더 스크립트 + 더블클릭 + 사용법
+      try{zip.file("render_shorts.js",Uint8Array.from(atob(SHORTS_JS_B64),c=>c.charCodeAt(0)));}catch(e){}
+      const cmd="#!/bin/bash\ncd \"$(dirname \"$0\")\"\n"+
+        "if ! command -v node >/dev/null 2>&1; then echo 'Node.js 필요: brew install node'; read -p '엔터...'; exit 1; fi\n"+
+        "if ! command -v ffmpeg >/dev/null 2>&1; then echo 'ffmpeg 필요: brew install ffmpeg'; read -p '엔터...'; exit 1; fi\n"+
+        "node render_shorts.js .\nread -p '완료. 엔터를 누르면 닫힙니다...'\n";
+      zip.file("쇼츠_만들기.command",cmd,{unixPermissions:"755"});
+      zip.file("사용법.txt",
+        "■ 쇼츠 만들기\n  1) '쇼츠_만들기.command' 더블클릭 → 모든 쇼츠가 9:16 세로로 렌더됩니다.\n"+
+        "  2) 완성된 쇼츠_short1.mp4, 쇼츠_short2.mp4 ... 가 이 폴더에 생깁니다.\n\n"+
+        "■ 특정 쇼츠만:  node render_shorts.js . short1\n\n"+
+        "■ 첫 더블클릭 시 보안 경고:\n  control+클릭 → 열기 → 열기. 또는 터미널에서 chmod +x 쇼츠_만들기.command\n\n"+
+        "이 대본의 쇼츠 목록:\n"+shortsData.map(s=>`  - ${s.id} [${s.design}] ${s.title_top} ${s.title_bottom} (컷 ${s.cuts.length}개)`).join("\n")+"\n");
+      const blob=await zip.generateAsync({type:"blob"});
+      const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+      a.download=project.replace(/\s+/g,"_")+"_shorts.zip";a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+      showToast("쇼츠 "+shortsData.length+"개 내보내기 완료 📱");
+    }catch(e){E.err.textContent="⚠ 쇼츠 내보내기 오류: "+e.message;showToast("쇼츠 내보내기 실패",true);}
+    finally{E.shortsBtn.textContent="📱 쇼츠 내보내기";E.shortsBtn.disabled=false;}
+  }
+
+  /* ---------- SHOTSTACK RENDER (browser; CORS may block) ---------- */
+  const ssUploaded={}; // filename -> source URL
+  function dataURLtoBlob(d){const [h,b]=d.split(",");const mime=h.match(/:(.*?);/)[1];const bin=atob(b);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:mime});}
+  function logRender(msg,append){if(append)E.renderStatus.innerHTML+=msg;else E.renderStatus.innerHTML=msg;E.renderStatus.style.display="";E.renderStatus.scrollTop=E.renderStatus.scrollHeight;}
+  async function ssApi(url,opts){const res=await fetch(url,opts);const txt=await res.text();let j;try{j=JSON.parse(txt);}catch{j=txt;}
+    if(!res.ok)throw new Error("HTTP "+res.status+" — "+(typeof j==="object"&&j.message?j.message:txt.slice(0,120)));return j;}
+
+  async function ssUpload(fname,blob,label){
+    if(ssUploaded[fname])return ssUploaded[fname];
+    const base="https://api.shotstack.io/ingest/"+shotEnv;
+    const up=await ssApi(base+"/upload",{method:"POST",headers:{"x-api-key":shotKey,"Accept":"application/json"}});
+    const {id,url}=up.data.attributes;
+    const put=await fetch(url,{method:"PUT",body:blob});
+    if(!put.ok)throw new Error(label+" 업로드 실패 HTTP "+put.status);
+    for(let i=0;i<40;i++){await sleep(1500);
+      const s=await ssApi(base+"/sources/"+id,{headers:{"x-api-key":shotKey,"Accept":"application/json"}});
+      const at=s.data.attributes;
+      if(at.status==="ready"){ssUploaded[fname]=at.source;return at.source;}
+      if(at.status==="failed")throw new Error(label+" ingest 실패");}
+    throw new Error(label+" ingest 시간초과");
+  }
+
+  async function shotstackRender(){
+    if(running)return;
+    if(!shotKey){openModal();return;}
+    const segs=cuts.filter(c=>c.narr&&(images[c.id]||(c.reuse&&images[c.ref])));
+    if(!segs.length){showToast("먼저 이미지를 생성하세요",true);return;}
+    const noAudio=segs.filter(c=>!audios[c.id]).length;
+    if(noAudio&&!confirm(noAudio+"개 컷에 음성이 없습니다. 글자수 추정 길이로 진행할까요?\n(정확한 싱크를 원하면 취소 후 음성을 먼저 생성)"))return;
+    running=true;E.renderBtn.textContent="렌더 중…";E.renderBtn.disabled=true;
+    for(const k in ssUploaded)delete ssUploaded[k];
+    try{
+      logRender("▶ <b>"+segs.length+"</b>개 컷 업로드 시작 ("+shotEnv+")<br>");
+      const KEN=["zoomIn","zoomOut","slideLeft","slideRight","slideUp","zoomIn"];
+      const imgClips=[],audClips=[];let t=0,ki=0;
+      for(const c of segs){
+        const imgId=c.reuse?(c.ref||c.id):c.id;
+        const imgData=images[imgId];
+        const imgUrl=await ssUpload(imgId+".png",dataURLtoBlob(imgData),c.id+" 이미지");
+        logRender("&nbsp;&nbsp;✓ "+c.id+" 이미지<br>",true);
+        let audUrl=null;
+        if(audios[c.id]){audUrl=await ssUpload(c.id+".mp3",audios[c.id].blob,c.id+" 음성");logRender("&nbsp;&nbsp;✓ "+c.id+" 음성<br>",true);}
+        const len=audios[c.id]?+audios[c.id].dur.toFixed(2):estimateFromText(c.narr);
+        imgClips.push({asset:{type:"image",src:imgUrl},start:+t.toFixed(2),length:len,effect:KEN[ki%KEN.length],transition:{in:"fade",out:"fade"}});
+        if(audUrl)audClips.push({asset:{type:"audio",src:audUrl},start:+t.toFixed(2),length:len});
+        t=+(t+len).toFixed(2);ki++;
+      }
+      const edit={timeline:{background:"#000000",tracks:[{clips:imgClips},{clips:audClips}]},
+        output:{format:"mp4",size:{width:1920,height:1080},fps:25}};
+      logRender("▶ 렌더 요청… (총 "+t.toFixed(0)+"초)<br>",true);
+      const base="https://api.shotstack.io/edit/"+shotEnv;
+      const r=await ssApi(base+"/render",{method:"POST",headers:{"x-api-key":shotKey,"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(edit)});
+      const rid=r.response.id;logRender("&nbsp;&nbsp;렌더 ID: "+rid+"<br>",true);
+      for(let i=0;i<150;i++){await sleep(3000);
+        const st=await ssApi(base+"/render/"+rid,{headers:{"x-api-key":shotKey,"Accept":"application/json"}});
+        const status=st.response.status;
+        logRender("&nbsp;&nbsp;상태: <b>"+status+"</b><br>",true);
+        if(status==="done"){logRender('<br>✅ 완성! <a href="'+st.response.url+'" target="_blank" style="color:var(--amber-bright)">▶ 영상 열기 / 다운로드</a><br>'+st.response.url,true);showToast("렌더 완료 🎬");break;}
+        if(status==="failed"){logRender("<br>✗ 렌더 실패: "+(st.response.error||""),true);showToast("렌더 실패",true);break;}
+      }
+    }catch(e){
+      logRender('<br>✗ 오류: '+esc(e.message)+'<br><span style="color:var(--ink-faint)">CORS 오류라면 브라우저에서 직접 호출이 막힌 것입니다. 내보내기(zip) 후 shotstack_render.js를 쓰세요.</span>',true);
+      showToast("렌더 오류",true);
+    }finally{running=false;E.renderBtn.textContent="🎬 Shotstack 렌더";E.renderBtn.disabled=false;}
+  }
+
+  /* ---------- GALLERY ---------- */
+  function addCell(id){
+    E.gallery.style.display="";
+    let cell=E.grid.querySelector('[data-id="'+CSS.escape(id)+'"]');
+    if(!cell){cell=document.createElement("div");cell.className="cell";cell.dataset.id=id;
+      cell.innerHTML='<img><span class="lab"></span><span class="au"></span>';
+      cell.addEventListener("click",()=>{const i=cuts.findIndex(c=>c.id===id);if(i>=0){idx=i;render();}});
+      E.grid.appendChild(cell);}
+    const img=images[id]||(()=>{const c=cuts.find(x=>x.id===id);return c&&c.reuse?images[c.ref]:null;})();
+    if(img)cell.querySelector("img").src=img;
+    cell.querySelector(".lab").textContent=id;
+    cell.querySelector(".au").textContent=audios[id]?"🔊":"";
+  }
+
+  /* ---------- COMMONS / COST / LEAD ---------- */
+  function fillCommons(){let h="";
+    if(commonSuffix)h+='<span class="lbl">공통 스타일</span><div class="txt">'+esc(commonSuffix)+'</div>';
+    if(eraFix)h+='<span class="lbl">시대 보정</span><div class="txt">'+esc(eraFix)+'</div>';
+    if(!h)h='<div class="txt">공통/보정 블록이 없습니다.</div>';E.commonsBody.innerHTML=h;}
+  function updateCost(){
+    if(!cuts.length){E.costBox.textContent="예상 비용: 파일을 먼저 불러오세요.";return;}
+    const imgN=cuts.filter(c=>!c.reuse).length,chars=cuts.reduce((s,c)=>s+(c.narr?c.narr.length:0),0);
+    E.costBox.innerHTML="이미지 <b>"+imgN+"</b>장 · 약 <b>$"+(imgN*IMG_PRICE[imgModel]).toFixed(2)+"</b><br>음성 <b>"+chars+"</b>자 (일레븐랩스 크레딧)";
+  }
+  function updateLead(){
+    const imgN=cuts.filter(c=>!c.reuse).length,imgD=Object.keys(images).length;
+    const audN=cuts.filter(c=>c.narr).length,audD=Object.keys(audios).length;
+    E.runImg.disabled=!geminiKey;E.runVoice.disabled=!elevenKey;
+    E.exportBtn.disabled=!(imgD||audD);
+    E.reviewBtn.style.display=cuts.length?"":"none";
+    E.renderBtn.disabled=!(shotKey&&imgD);
+    E.shortsBtn.style.display=shortsData.length?"":"none";
+    E.shortsBtn.disabled=!(shortsData.length&&imgD);
+    E.autoLead.innerHTML="🖼 <b>"+imgD+"</b>/"+imgN+" · 🔊 <b>"+audD+"</b>/"+audN+(audD?" · 길이 합 <b>"+totalDur().toFixed(0)+"초</b>":"");
+  }
+  function totalDur(){return cuts.reduce((s,c)=>s+(audios[c.id]?audios[c.id].dur:(c.narr?estimateFromText(c.narr):0)),0);}
+  const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+  /* ---------- COPY / NAV ---------- */
+  function copyText(t){if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(t).catch(()=>fb(t));return fb(t);}
+  function fb(t){return new Promise(res=>{const ta=document.createElement("textarea");ta.value=t;ta.style.cssText="position:fixed;opacity:0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta);res();});}
+  let toastT;function showToast(m,err){E.toast.textContent=m;E.toast.classList.toggle("err",!!err);E.toast.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>E.toast.classList.remove("show"),1300);}
+  function copyCurrent(){const c=cuts[idx];if(!c.prompt){showToast("복사할 프롬프트 없음",true);return Promise.resolve();}return copyText(c.prompt).then(()=>{showToast(c.id+" 복사됨");E.copy.classList.add("copied");setTimeout(()=>E.copy.classList.remove("copied"),350);});}
+  function go(d){const n=idx+d;if(n>=0&&n<cuts.length){idx=n;render();}}
+  function goTo(n){if(n>=0&&n<cuts.length){idx=n;render();}}
+  function resolveJump(raw){const s=String(raw).trim();if(!s)return -1;
+    if(/^\d+$/.test(s)){const n=parseInt(s,10)-1;return(n>=0&&n<cuts.length)?n:-1;}
+    const up=s.toUpperCase();let i=cuts.findIndex(c=>c.id.toUpperCase()===up);
+    if(i<0)i=cuts.findIndex(c=>c.id.toUpperCase()==="C"+up);if(i<0)i=cuts.findIndex(c=>c.id.toUpperCase().startsWith(up));return i;}
+  function doJump(){const i=resolveJump(E.jump.value);if(i<0){E.jump.value=idx+1;showToast("그런 컷이 없어요",true);return;}goTo(i);E.jump.blur();}
+
+  /* ---------- LOAD ---------- */
+  /* ---------- 작업 중간 저장 (IndexedDB) ---------- */
+  let projectKey="";          // 현재 대본 식별자
+  let saveTimer=null;
+  function hashStr(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return "p"+(h>>>0).toString(36);}
+  function idbOpen(){
+    return new Promise((res,rej)=>{
+      const r=indexedDB.open("slate_store",1);
+      r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains("assets"))db.createObjectStore("assets");};
+      r.onsuccess=e=>res(e.target.result);r.onerror=()=>rej(r.error);
+    });
+  }
+  async function idbSet(key,val){try{const db=await idbOpen();return new Promise((res,rej)=>{const tx=db.transaction("assets","readwrite");tx.objectStore("assets").put(val,key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}catch(e){}}
+  async function idbGet(key){try{const db=await idbOpen();return new Promise((res)=>{const tx=db.transaction("assets","readonly");const rq=tx.objectStore("assets").get(key);rq.onsuccess=()=>res(rq.result||null);rq.onerror=()=>res(null);});}catch(e){return null;}}
+  async function idbDel(key){try{const db=await idbOpen();return new Promise((res)=>{const tx=db.transaction("assets","readwrite");tx.objectStore("assets").delete(key);tx.oncomplete=()=>res();tx.onerror=()=>res();});}catch(e){}}
+
+  // blob → dataURL (저장용), dataURL → blob (복원용)
+  function blobToDataURL(blob){return new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.onerror=()=>r(null);fr.readAsDataURL(blob);});}
+  function dataURLtoBlobLocal(d){const [h,b]=d.split(",");const mime=(h.match(/:(.*?);/)||[])[1]||"audio/mpeg";const bin=atob(b);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:mime});}
+
+  // 디바운스 저장
+  function scheduleSave(){if(!projectKey)return;clearTimeout(saveTimer);saveTimer=setTimeout(saveProgress,800);}
+  async function saveProgress(){
+    if(!projectKey)return;
+    try{
+      const imgEntries={};for(const k in images)imgEntries[k]=images[k];
+      const audEntries={};for(const k in audios){const a=audios[k];audEntries[k]={dur:a.dur,chars:a.chars,data:await blobToDataURL(a.blob)};}
+      await idbSet(projectKey,{script:lastScript,images:imgEntries,audios:audEntries,savedAt:Date.now()});
+      const n=Object.keys(imgEntries).length+Object.keys(audEntries).length;
+      if(E.saveInfo)E.saveInfo.textContent=n?("💾 저장됨 "+new Date().toLocaleTimeString().slice(0,5)):"";
+    }catch(e){console.warn("저장 실패",e);}
+  }
+  async function restoreProgress(key){
+    const saved=await idbGet(key);
+    if(!saved)return 0;
+    let n=0;
+    if(saved.images)for(const k in saved.images){images[k]=saved.images[k];n++;}
+    if(saved.audios)for(const k in saved.audios){const a=saved.audios[k];const blob=dataURLtoBlobLocal(a.data);audios[k]={blob,url:URL.createObjectURL(blob),dur:a.dur,chars:a.chars};n++;}
+    return n;
+  }
+  async function clearProgress(){if(projectKey)await idbDel(projectKey);if(E.saveInfo)E.saveInfo.textContent="";}
+
+  let lastScript="";
+  /* ---------- 대본 로드 ---------- */
+  async function load(text){
+    E.err.textContent="";document.body.dataset.era=/박정희|B0-/.test(text)?"b":"a";
+    let parsed=[];try{parsed=parse(text);}catch(e){console.error(e);}
+    if(!parsed.length){E.err.textContent="컷을 찾지 못했어요. (C# : ...) 또는 🎨 **C##** 형식인지 확인해 주세요.";return;}
+    // 기존 에셋 정리
+    for(const k in images)delete images[k];
+    for(const k in audios){URL.revokeObjectURL(audios[k].url);delete audios[k];}
+    E.grid.innerHTML="";
+    cuts=parsed;idx=0;lastScript=text;projectKey=hashStr(text.slice(0,2000));E.total.textContent=cuts.length;
+    // 저장된 작업 복원
+    const restored=await restoreProgress(projectKey);
+    buildStrip();fillCommons();updateCost();updateLead();
+    if(restored){Object.keys(images).forEach(addCell);Object.keys(audios).forEach(addCell);refreshStrip();showToast("이전 작업 "+restored+"개 복원됨 💾");}
+    render();
+    E.drop.style.display="none";E.player.classList.add("on");E.player.style.display="flex";E.reset.style.display="";
+  }
+  /* ---------- 검수 화면 ---------- */
+  let reviewFilter="all";
+  function cutState(c){
+    const imgId=c.reuse?(c.ref||""):c.id;
+    const hasImg=!!images[imgId];
+    const hasAud=!!audios[c.id];
+    const needAud=!!c.narr;
+    return {imgId,hasImg,hasAud,needAud};
+  }
+  function openReview(){renderReview();E.reviewModal.classList.add("on");}
+  function renderReview(){
+    const g=E.reviewGrid;g.innerHTML="";
+    let nImg=0,nAud=0,nReady=0,nBad=0,total=0;
+    cuts.forEach(c=>{
+      const st=cutState(c);
+      if(!c.reuse&&st.hasImg)nImg++;
+      if(st.needAud&&st.hasAud)nAud++;
+      const ready=(st.hasImg||c.reuse)&&(!st.needAud||st.hasAud);
+      if(ready)nReady++;else nBad++;
+      total++;
+      if(reviewFilter==="noimg"&&(c.reuse||st.hasImg))return;
+      if(reviewFilter==="noaud"&&(!st.needAud||st.hasAud))return;
+      if(reviewFilter==="ready"&&!ready)return;
+
+      const card=document.createElement("div");
+      card.className="rcard"+(ready?"":" bad");
+      const thumb=document.createElement("div");thumb.className="rthumb";
+      const imgData=images[st.imgId];
+      if(imgData){const im=document.createElement("img");im.src=imgData;thumb.appendChild(im);}
+      else{const ph=document.createElement("div");ph.className="ph";ph.textContent=c.reuse?("재사용 ← "+(c.ref||"?")):"이미지 없음";thumb.appendChild(ph);}
+      const rid=document.createElement("div");rid.className="rid";rid.textContent=c.id;thumb.appendChild(rid);
+      const badge=document.createElement("div");
+      badge.className="rbadge "+(c.reuse?"re":(st.hasImg?"ok":"no"));
+      badge.textContent=c.reuse?"재사용":(st.hasImg?"✓":"✗");
+      thumb.appendChild(badge);
+      thumb.addEventListener("click",()=>{const i=cuts.indexOf(c);if(i>=0){idx=i;render();E.reviewModal.classList.remove("on");}});
+      card.appendChild(thumb);
+      const body=document.createElement("div");body.className="rbody";
+      const narr=document.createElement("div");narr.className="rnarr";narr.textContent=c.narr||"(나레이션 없음)";body.appendChild(narr);
+      if(st.needAud){
+        const aud=document.createElement("div");aud.className="raud";
+        if(st.hasAud){const a=document.createElement("audio");a.controls=true;a.src=audios[c.id].url;aud.appendChild(a);
+          const dur=document.createElement("span");dur.textContent=audios[c.id].dur.toFixed(1)+"s";aud.appendChild(dur);}
+        else{aud.innerHTML='<span style="color:#b5532a">음성 ✗</span>';}
+        body.appendChild(aud);
+      }
+      const act=document.createElement("div");act.className="ractions";
+      if(!c.reuse){
+        const bi=document.createElement("button");bi.className="ract";bi.textContent=st.hasImg?"🖼 다시":"🖼 생성";
+        bi.addEventListener("click",async()=>{if(!geminiKey){openModal();return;}bi.classList.add("busy");bi.textContent="생성 중…";
+          try{images[c.id]=await genImage(c);addCell(c.id);refreshStrip();scheduleSave();}catch(e){showToast(c.id+" 실패: "+e.message,true);}
+          bi.classList.remove("busy");renderReview();});
+        act.appendChild(bi);
+      }
+      if(st.needAud){
+        const bv=document.createElement("button");bv.className="ract";bv.textContent=st.hasAud?"🔊 다시":"🔊 생성";
+        bv.addEventListener("click",async()=>{if(!elevenKey){openModal();return;}bv.classList.add("busy");bv.textContent="생성 중…";
+          try{if(audios[c.id])URL.revokeObjectURL(audios[c.id].url);audios[c.id]=await genVoice(c);addCell(c.id);scheduleSave();}catch(e){showToast(c.id+" 실패: "+e.message,true);}
+          bv.classList.remove("busy");renderReview();});
+        act.appendChild(bv);
+      }
+      body.appendChild(act);card.appendChild(body);g.appendChild(card);
+    });
+    E.reviewSum.innerHTML=`전체 <b>${total}</b>컷 · 이미지 <b>${nImg}</b> · 음성 <b>${nAud}</b> · 완성 <b>${nReady}</b>`+(nBad?` · <span style="color:#d98">미완성 ${nBad}</span>`:"");
+  }
+
+  function readFile(f){if(!f)return;const r=new FileReader();r.onload=e=>load(e.target.result);r.onerror=()=>E.err.textContent="파일을 읽지 못했습니다.";r.readAsText(f,"utf-8");}
+
+  /* ---------- 대본 생성 (Claude API) ---------- */
+  function renderGenres(){
+    E.genres.innerHTML="";
+    GENRES.forEach(g=>{
+      const d=document.createElement("div");
+      d.className="genre"+(g.id===genre?" sel":"");d.dataset.id=g.id;
+      d.innerHTML=`<div class="g-top">${g.emoji} ${g.name}</div><div class="g-hint">${g.hint}</div>`;
+      d.addEventListener("click",()=>{genre=g.id;[...E.genres.children].forEach(c=>c.classList.toggle("sel",c.dataset.id===g.id));});
+      E.genres.appendChild(d);
+    });
+  }
+  function switchTab(which){
+    const w=which==="write";
+    E.tabWrite.classList.toggle("active",w);E.tabMake.classList.toggle("active",!w);
+    E.writepane.style.display=w?"":"none";
+    // 제작 탭: 이미 대본 로드됐으면 player, 아니면 drop
+    if(!w){const loaded=E.player.classList.contains("on");E.drop.style.display=loaded?"none":"";E.player.style.display=loaded?"flex":"none";}
+    else{E.drop.style.display="none";E.player.style.display="none";}
+  }
+  async function generateScript(){
+    const topic=E.topic.value.trim();
+    if(!topic){E.wpStatus.innerHTML='<span class="err">주제나 인물을 입력해 주세요.</span>';return;}
+    if(!claudeKey){E.wpStatus.innerHTML='<span class="err">먼저 ⚙ API 설정에서 Claude 키를 넣어주세요.</span>';openModal();return;}
+    let basePrompt="";try{basePrompt=new TextDecoder().decode(Uint8Array.from(atob(PROMPT_B64),c=>c.charCodeAt(0)));}catch(e){}
+    const gp=GENRE_PROMPT[genre]||"";
+    const sys=basePrompt+"\n\n---\n\n## 이번 작업 장르 지시\n"+gp+"\n\n반드시 위 형식(캐릭터/작업규칙/대본+컷/참고사료/편집메모/SHORTS-DATA, 각 컷에 [overlay:태그])을 모두 갖춘 완성된 .md 대본만 출력하라. 설명·머리말 없이 대본 본문만.";
+
+    E.genScript.classList.add("busy");E.genScript.disabled=true;E.genScript.textContent="생성 중…";
+    E.wpResult.style.display="none";
+    // 살아있는 로딩 표시: 스피너 + 단계 메시지 + 경과 시간
+    const steps=["주제를 분석하고 있어요","역사적 사실을 정리하는 중","대본 구조를 짜는 중","컷과 이미지 프롬프트를 쓰는 중","쇼츠와 오버레이를 배치하는 중","마무리하는 중"];
+    let si=0,sec=0;
+    E.wpStatus.innerHTML=`<div class="wp-loading"><div class="ring"></div><div class="msg"><b id="lstep">${steps[0]}</b><span class="dots"></span><br><span style="color:var(--ink-faint)">보통 1~2분 걸려요. 창을 닫지 마세요.</span></div><div class="elapsed" id="lelapsed">0초</div></div>`;
+    const stepEl=()=>document.getElementById("lstep"), elEl=()=>document.getElementById("lelapsed");
+    const tick=setInterval(()=>{sec++;const e=elEl();if(e)e.textContent=sec+"초";if(sec%12===0&&si<steps.length-1){si++;const st=stepEl();if(st)st.textContent=steps[si];}},1000);
+
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"x-api-key":claudeKey,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:claudeModel,max_tokens:16000,
+          system:sys,
+          messages:[{role:"user",content:`다음 주제로 대본을 작성하라: ${topic}`}]})
+      });
+      if(!res.ok){let msg="HTTP "+res.status;try{const j=await res.json();msg=j.error&&j.error.message||msg;}catch(e){}
+        if(res.status===401)msg="Claude API 키가 올바르지 않습니다.";
+        if(res.status===429)msg="요청 한도 초과(429). 잠시 후 다시.";throw new Error(msg);}
+      const j=await res.json();
+      const text=(j.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+      if(!text)throw new Error("빈 응답을 받았습니다.");
+      clearInterval(tick);
+      E.scriptOut.value=text;E.wpResult.style.display="";
+      saveDraft();   // 생성 즉시 자동 저장
+      E.wpStatus.innerHTML='✓ 대본 완성 ('+sec+'초) · 자동 저장됨. 검토 후 \'이 대본으로 제작 →\' 을 누르세요.';
+    }catch(e){clearInterval(tick);E.wpStatus.innerHTML='<span class="err">⚠ '+esc(e.message)+'</span>';}
+    finally{E.genScript.classList.remove("busy");E.genScript.disabled=false;E.genScript.textContent="✦ 대본 생성";}
+  }
+
+  // 대본 초안 자동 저장/복원 (localStorage)
+  function saveDraft(){try{localStorage.setItem("draft_script",E.scriptOut.value);localStorage.setItem("draft_topic",E.topic.value);localStorage.setItem("draft_genre",genre);}catch(e){}}
+  function loadDraft(){
+    try{
+      const s=localStorage.getItem("draft_script")||"";
+      const t=localStorage.getItem("draft_topic")||"";
+      const g=localStorage.getItem("draft_genre")||"";
+      if(t)E.topic.value=t;
+      if(g){genre=g;[...E.genres.children].forEach(c=>c.classList.toggle("sel",c.dataset.id===g));}
+      if(s){E.scriptOut.value=s;E.wpResult.style.display="";E.wpStatus.textContent="💾 지난 대본을 불러왔어요.";}
+    }catch(e){}
+  }
+
+  /* ---------- VOICES ---------- */
+  async function loadVoices(){
+    const k=E.elevenKey.value.trim();if(!k){showToast("키를 먼저 입력하세요",true);return;}
+    E.loadVoices.textContent="불러오는 중…";
+    // v2 먼저, 실패하면 v1로 재시도
+    async function tryFetch(url){const res=await fetch(url,{headers:{"xi-api-key":k}});return res;}
+    try{
+      let res=await tryFetch("https://api.elevenlabs.io/v2/voices?page_size=100");
+      if(!res.ok&&(res.status===404||res.status===400))res=await tryFetch("https://api.elevenlabs.io/v1/voices");
+      if(!res.ok){
+        let detail="";try{const j=await res.json();detail=(j.detail&&(j.detail.message||j.detail.status||j.detail))||"";}catch(e){}
+        if(res.status===401)throw new Error("키가 올바르지 않습니다. (xi-api-key 확인)");
+        if(res.status===403)throw new Error("이 키에 음성 목록 권한(voices_read)이 없습니다. elevenlabs.io에서 키 권한을 확인하세요.");
+        throw new Error("HTTP "+res.status+(detail?(" · "+(typeof detail==="string"?detail:JSON.stringify(detail))):""));
+      }
+      const j=await res.json();const vs=j.voices||[];
+      if(!vs.length){showToast("계정에 음성이 없습니다. elevenlabs.io에서 음성을 추가하세요.",true);return;}
+      E.voiceSel.innerHTML='<option value="">— 음성 선택 —</option>';
+      vs.forEach(v=>{const o=document.createElement("option");o.value=v.voice_id;o.textContent=v.name+(v.labels&&v.labels.language?(" · "+v.labels.language):"");E.voiceSel.appendChild(o);});
+      // 첫 음성을 자동 선택(아직 voiceId가 기본값이면)
+      if(!voiceId||voiceId==="21m00Tcm4TlvDq8ikWAM"){E.voiceSel.value=vs[0].voice_id;voiceId=vs[0].voice_id;if(E.voiceId)E.voiceId.value="";saveKeys();}
+      showToast(vs.length+"개 음성 불러옴 · 첫 음성 자동 선택됨");
+    }catch(e){showToast("음성 목록 실패: "+e.message,true);}
+    finally{E.loadVoices.textContent="목록 불러오기";}
+  }
+
+  /* ---------- KEYS PERSISTENCE (localStorage) ---------- */
+  const LS={get:k=>{try{return localStorage.getItem(k)||"";}catch(e){return"";}},set:(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}}};
+  function loadKeys(){
+    geminiKey=LS.get("k_gemini");imgModel=LS.get("k_imgModel")||imgModel;
+    elevenKey=LS.get("k_eleven");voiceModel=LS.get("k_voiceModel")||voiceModel;voiceId=LS.get("k_voiceId")||voiceId;
+    shotKey=LS.get("k_shot");shotEnv=LS.get("k_shotEnv")||shotEnv;
+    claudeKey=LS.get("k_claude");claudeModel=LS.get("k_claudeModel")||claudeModel;
+    if(E.claudeModelSel)E.claudeModelSel.value=claudeModel;
+  }
+  function saveKeys(){
+    LS.set("k_gemini",geminiKey);LS.set("k_imgModel",imgModel);
+    LS.set("k_eleven",elevenKey);LS.set("k_voiceModel",voiceModel);LS.set("k_voiceId",voiceId);
+    LS.set("k_shot",shotKey);LS.set("k_shotEnv",shotEnv);
+    LS.set("k_claude",claudeKey);LS.set("k_claudeModel",claudeModel);
+  }
+
+  /* ---------- MODAL ---------- */
+  function openModal(){E.claudeKey.value=claudeKey;E.geminiKey.value=geminiKey;E.imgModel.value=imgModel;E.elevenKey.value=elevenKey;E.voiceModel.value=voiceModel;E.voiceId.value=voiceId;E.shotKey.value=shotKey;E.shotEnv.value=shotEnv;updateCost();E.modal.classList.add("on");}
+  function closeModal(){E.modal.classList.remove("on");}
+
+  /* ---------- EVENTS ---------- */
+  E.file.addEventListener("change",e=>readFile(e.target.files[0]));
+  ["dragenter","dragover"].forEach(ev=>E.drop.addEventListener(ev,e=>{e.preventDefault();E.drop.classList.add("over");}));
+  ["dragleave","drop"].forEach(ev=>E.drop.addEventListener(ev,e=>{e.preventDefault();E.drop.classList.remove("over");}));
+  E.drop.addEventListener("drop",e=>readFile(e.dataTransfer.files[0]));
+
+  E.gen.addEventListener("click",()=>{if(!geminiKey){openModal();return;}genImageCurrent(true);});
+  E.ttsBtn.addEventListener("click",()=>{if(!elevenKey){openModal();return;}genVoiceCurrent(false);});
+  E.copy.addEventListener("click",copyCurrent);
+  E.prev.addEventListener("click",()=>go(-1));
+  E.runImg.addEventListener("click",()=>runAll("img"));
+  E.runVoice.addEventListener("click",()=>runAll("voice"));
+  E.retryBtn.addEventListener("click",()=>{if(running)return;runAll(lastFailedKind);});
+  E.exportBtn.addEventListener("click",exportAll);
+  E.reviewBtn.addEventListener("click",openReview);
+  E.closeReview.addEventListener("click",()=>E.reviewModal.classList.remove("on"));
+  E.reviewModal.addEventListener("click",e=>{if(e.target===E.reviewModal)E.reviewModal.classList.remove("on");});
+  document.querySelectorAll(".rf").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll(".rf").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+    reviewFilter=b.dataset.f;renderReview();
+  }));
+  E.renderBtn.addEventListener("click",shotstackRender);
+  E.shortsBtn.addEventListener("click",exportShorts);
+  // 대본 생성 탭
+  renderGenres();
+  E.tabWrite.addEventListener("click",()=>switchTab("write"));
+  E.tabMake.addEventListener("click",()=>switchTab("make"));
+  E.claudeModelSel.addEventListener("change",()=>{claudeModel=E.claudeModelSel.value;});
+  E.genScript.addEventListener("click",generateScript);
+  E.topic.addEventListener("keydown",e=>{if(e.key==="Enter")generateScript();});
+  E.copyScript.addEventListener("click",()=>{copyText(E.scriptOut.value).then(()=>showToast("대본 복사됨"));});
+  E.dlScript.addEventListener("click",()=>{const blob=new Blob([E.scriptOut.value],{type:"text/markdown"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(E.topic.value.trim()||"script").replace(/\s+/g,"_")+".md";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);});
+  E.useScript.addEventListener("click",async()=>{const t=E.scriptOut.value.trim();if(!t){showToast("대본이 비어 있어요",true);return;}await load(t);switchTab("make");});
+  E.scriptOut.addEventListener("input",()=>{clearTimeout(window._draftT);window._draftT=setTimeout(saveDraft,600);});
+  E.topic.addEventListener("input",()=>{clearTimeout(window._draftT);window._draftT=setTimeout(saveDraft,600);});
+  loadDraft();
+  E.jump.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();doJump();}});
+  E.jump.addEventListener("focus",()=>E.jump.select());
+  E.jump.addEventListener("blur",doJump);
+  E.strip.addEventListener("click",e=>{const f=e.target.closest(".frame");if(f&&!running)goTo(+f.dataset.i);});
+  E.reset.addEventListener("click",async()=>{
+    const hasAssets=Object.keys(images).length||Object.keys(audios).length;
+    if(hasAssets&&!confirm("현재 작업과 저장된 진행상황을 모두 지우고 새로 시작할까요?\n(생성한 이미지·음성이 삭제됩니다)"))return;
+    await clearProgress();
+    E.player.classList.remove("on");E.player.style.display="none";E.drop.style.display="";E.reset.style.display="none";E.file.value="";cuts=[];idx=0;projectKey="";E.gallery.style.display="none";E.grid.innerHTML="";for(const k in images)delete images[k];for(const k in audios){URL.revokeObjectURL(audios[k].url);delete audios[k];}
+  });
+
+  E.settings.addEventListener("click",openModal);
+  E.cancelSet.addEventListener("click",closeModal);
+  E.modal.addEventListener("click",e=>{if(e.target===E.modal)closeModal();});
+  E.imgModel.addEventListener("change",()=>{imgModel=E.imgModel.value;updateCost();});
+  E.loadVoices.addEventListener("click",loadVoices);
+  E.voiceSel.addEventListener("change",()=>{if(E.voiceSel.value){E.voiceId.value=E.voiceSel.value;voiceId=E.voiceSel.value;saveKeys();}});
+  E.saveSet.addEventListener("click",()=>{
+    claudeKey=E.claudeKey.value.trim();
+    geminiKey=E.geminiKey.value.trim();imgModel=E.imgModel.value;
+    elevenKey=E.elevenKey.value.trim();voiceModel=E.voiceModel.value;
+    voiceId=(E.voiceId.value.trim()||E.voiceSel.value||"21m00Tcm4TlvDq8ikWAM");
+    shotKey=E.shotKey.value.trim();shotEnv=E.shotEnv.value;
+    saveKeys();
+    closeModal();updateLead();if(cuts.length)render();
+    showToast("설정 저장됨");
+  });
+  // 저장된 키 자동 로드
+  loadKeys();
+
+  document.addEventListener("keydown",e=>{
+    if(!E.player.classList.contains("on")||E.modal.classList.contains("on"))return;
+    if(["INPUT","SELECT","SUMMARY","TEXTAREA"].includes(e.target.tagName))return;
+    if(e.code==="Space"||e.code==="ArrowRight"){e.preventDefault();if(geminiKey&&!cuts[idx].reuse)genImageCurrent(true);else go(1);}
+    else if(e.code==="ArrowLeft"){e.preventDefault();go(-1);}
+    else if((e.key==="v"||e.key==="V")&&!e.metaKey&&!e.ctrlKey){e.preventDefault();if(elevenKey)genVoiceCurrent(false);}
+    else if((e.key==="c"||e.key==="C")&&!e.metaKey&&!e.ctrlKey){e.preventDefault();copyCurrent();}
+  });
+})();
+</script>
+</body>
+</html>

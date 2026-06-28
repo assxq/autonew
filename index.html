@@ -692,20 +692,36 @@
     function srtTime(sec){const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=Math.floor(sec%60),ms=Math.round((sec-Math.floor(sec))*1000);
       return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+","+String(ms).padStart(3,"0");}
     function splitCaption(text,dur){
-      const MAX=16;
+      const MAX=22;        // 한 줄 최대 글자
+      const MERGE=12;      // 이보다 짧은 조각은 앞과 합침
+      const MIN_PER=1.1;   // 자막 하나가 화면에 머무는 최소 시간(초)
       let marked=text
-        .replace(/([,.!?。…])\s*/g,"$1\n")
-        .replace(/(은|는|이|가|을|를|에게|에서|으로|로|와|과|도|만|까지|부터|에|의)\s+/g,"$1\n")
-        .replace(/(고|며|면서|지만|는데|어서|아서|니까|라서|면|거나)\s+/g,"$1\n");
-      let chunks=marked.split("\n").map(s=>s.trim()).filter(Boolean);
+        .replace(/([.!?。…])\s*/g,"$1\n")
+        .replace(/(은|는|이|가|을|를|에게|에서|으로|로|와|과|까지|부터)\s+/g,"$1\n")
+        .replace(/(고|며|면서|지만|는데|니까|라서)\s+/g,"$1\n");
+      let parts=marked.split("\n").map(s=>s.trim()).filter(Boolean);
+      // 1차 병합: 너무 긴 건 쪼개고, 너무 짧은 건 앞과 합침
       const merged=[];
-      for(let part of chunks){
-        while(part.length>MAX){let cut=part.lastIndexOf(" ",MAX);if(cut<6)cut=MAX;merged.push(part.slice(0,cut).trim());part=part.slice(cut).trim();}
-        if(part){if(merged.length&&merged[merged.length-1].length+part.length+1<=MAX&&merged[merged.length-1].length<6)merged[merged.length-1]=(merged[merged.length-1]+" "+part).trim();else merged.push(part);}
+      for(let part of parts){
+        while(part.length>MAX){let cut=part.lastIndexOf(" ",MAX);if(cut<8)cut=MAX;merged.push(part.slice(0,cut).trim());part=part.slice(cut).trim();}
+        if(part){
+          if(merged.length&&merged[merged.length-1].length+part.length+1<=MAX&&merged[merged.length-1].length<MERGE)
+            merged[merged.length-1]=(merged[merged.length-1]+" "+part).trim();
+          else merged.push(part);
+        }
       }
-      const parts=merged.length?merged:[text];
+      parts=merged.length?merged:[text];
+      // 2차: 음성 길이 안에서 조각당 최소 시간이 보장되도록 조각 수 제한
+      const maxChunks=Math.max(1,Math.floor(dur/MIN_PER));
+      while(parts.length>maxChunks){
+        // 가장 짧은 인접 쌍을 찾아 합침 (합쳐도 MAX*1.6 이하면)
+        let bi=0,bl=Infinity;
+        for(let i=0;i<parts.length-1;i++){const l=parts[i].length+parts[i+1].length;if(l<bl){bl=l;bi=i;}}
+        parts[bi]=(parts[bi]+" "+parts[bi+1]).trim();parts.splice(bi+1,1);
+      }
+      // 시간 배분: 글자 수 비례, 합은 정확히 dur
       const total=parts.reduce((a,p)=>a+p.length,0)||1;
-      return parts.map(p=>({t:p,d:Math.max(0.7,dur*(p.length/total))}));
+      return parts.map(p=>({t:p,d:dur*(p.length/total)}));
     }
     let srt="",si=0,vt=0;
     for(const c of cuts){

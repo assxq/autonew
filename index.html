@@ -724,15 +724,29 @@
       return parts.map(p=>({t:p,d:dur*(p.length/total)}));
     }
     let srt="",si=0,vt=0;
+    const FADE=0.4, MIN_CLIP=1.2;   // render_local.js와 동일한 값
     for(const c of cuts){
       if((c.tags||[]).includes("기준"))continue;
-      if(!c.narr)continue;
+      if(!c.narr){                  // 나레이션 없는 컷: 자막 없이 시간만 흐름(텀)
+        const au0=audios[c.id];
+        if(au0)vt=+(vt+Math.max(MIN_CLIP,au0.dur)).toFixed(2);
+        continue;
+      }
       const au=audios[c.id];
-      const len=au?+au.dur.toFixed(2):estimateFromText(c.narr);
-      const caps=splitCaption(c.narr,len);
+      const aud=au?au.dur:estimateFromText(c.narr);
+      // 영상에서 이 컷이 실제로 차지하는 길이 (render_local.js와 동일: max(1.2, 음성))
+      const clip=Math.max(MIN_CLIP,+aud.toFixed(2));
+      // 자막은 음성이 나오는 구간에만, 끝부분 페이드 여유는 비움
+      const speakEnd=Math.max(0.8, aud-FADE*0.5);
+      const caps=splitCaption(c.narr,speakEnd);
       let ct=vt;
-      for(const cap of caps){si++;srt+=si+"\n"+srtTime(ct)+" --> "+srtTime(ct+cap.d)+"\n"+cap.t+"\n\n";ct+=cap.d;}
-      vt=+(vt+len).toFixed(2);
+      for(const cap of caps){
+        si++;
+        const end=Math.min(ct+cap.d, vt+clip-0.05);   // 컷 경계를 절대 넘지 않음
+        srt+=si+"\n"+srtTime(ct)+" --> "+srtTime(end)+"\n"+cap.t+"\n\n";
+        ct+=cap.d;
+      }
+      vt=+(vt+clip).toFixed(2);      // 다음 컷 시작 = 이 컷의 실제 영상 길이만큼 이동
     }
     return srt;
   }

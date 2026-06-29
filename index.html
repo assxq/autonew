@@ -183,6 +183,23 @@
   #scriptOut{width:100%;min-height:340px;background:#0c1322;border:1px solid var(--line);border-radius:12px;color:#cdd8ee;font-family:var(--mono);font-size:12px;line-height:1.7;padding:15px;resize:vertical;white-space:pre}
   #scriptOut:focus{outline:none;border-color:var(--amber)}
 
+  .subpane{display:flex;flex-direction:column;gap:16px}
+  .sub-intro{background:var(--bg-raise);border:1px solid var(--line);border-radius:12px;padding:15px 17px;font-family:var(--body);font-size:13.5px;color:var(--ink-dim);line-height:1.7}
+  .sub-intro b{color:var(--amber-bright)}
+  .sub-status{font-family:var(--mono);font-size:12px;color:var(--ink-dim);min-height:16px}
+  .sub-status .ok{color:var(--green)}.sub-status .err{color:var(--red)}
+  .sub-drop{display:block;background:var(--bg-raise);border:2px dashed var(--line);border-radius:14px;padding:30px 20px;cursor:pointer;transition:.15s;text-align:center}
+  .sub-drop:hover{border-color:var(--amber)}
+  .sub-drop.over{border-color:var(--amber);background:#1a2336}
+  .sub-drop-inner{display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--body);font-size:14px;color:var(--ink-dim)}
+  .sub-drop-ico{font-size:30px}
+  .sub-drop-sub{font-family:var(--mono);font-size:11px;color:var(--amber-bright)}
+  .sub-controls{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .sub-result{display:flex;flex-direction:column;gap:10px}
+  .sub-result-head{display:flex;justify-content:space-between;align-items:center;font-family:var(--disp);font-size:13px;color:var(--ink-dim)}
+  #subOut{width:100%;min-height:320px;background:#0c1322;border:1px solid var(--line);border-radius:12px;color:#cdd8ee;font-family:var(--mono);font-size:12px;line-height:1.7;padding:15px;resize:vertical;white-space:pre}
+  #subOut:focus{outline:none;border-color:var(--amber)}
+
   .review-sheet{max-width:980px;width:94%;max-height:88vh;display:flex;flex-direction:column}
   .review-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
   .review-head h2{font-family:var(--disp);font-size:18px;margin:0}
@@ -245,6 +262,7 @@
   <div class="tabs">
     <button class="tab active" id="tabWrite">✍️ 대본 생성</button>
     <button class="tab" id="tabMake">🎬 이미지·음성 제작</button>
+    <button class="tab" id="tabSub">📝 자막 보정</button>
   </div>
 
   <div class="writepane" id="writepane">
@@ -272,6 +290,38 @@
         </div>
       </div>
       <textarea id="scriptOut" spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <div class="subpane" id="subpane" style="display:none">
+    <div class="sub-intro">
+      음성인식(STT)으로 만든 .srt를 넣으면, <b>시간(타임라인)은 그대로 두고</b> 텍스트만 현재 대본의 정확한 문장으로 교체합니다.
+      먼저 위 '대본 생성' 또는 '제작' 탭에서 대본을 불러와 주세요.
+    </div>
+    <div class="sub-status" id="subScriptStatus"></div>
+    <label class="sub-drop" id="subDrop">
+      <input type="file" id="subFile" accept=".srt,.vtt" hidden>
+      <div class="sub-drop-inner">
+        <div class="sub-drop-ico">📝</div>
+        <div>음성인식 .srt 파일을 여기에 끌어다 놓거나 클릭해서 선택</div>
+        <div class="sub-drop-sub" id="subFileName"></div>
+      </div>
+    </label>
+    <div class="sub-controls">
+      <label style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--ink-dim);cursor:pointer">
+        <input type="checkbox" id="subKeepSplit" checked style="accent-color:var(--amber);width:14px;height:14px">STT 줄 나눔(타이밍) 유지
+      </label>
+      <button class="btn-write" id="subFix" disabled>✦ 대본과 일치시키기</button>
+    </div>
+    <div class="sub-result" id="subResult" style="display:none">
+      <div class="sub-result-head">
+        <span id="subResultInfo">보정 완료</span>
+        <div>
+          <button class="wp-mini" id="subCopy">복사</button>
+          <button class="wp-mini go" id="subDownload">⤓ 보정된 .srt</button>
+        </div>
+      </div>
+      <textarea id="subOut" spellcheck="false"></textarea>
     </div>
   </div>
 
@@ -412,7 +462,10 @@
     exportBtn:$("#exportBtn"),autoLead:$("#autoLead"),gallery:$("#gallery"),grid:$("#grid"),
     renderBtn:$("#renderBtn"),renderStatus:$("#renderStatus"),shortsBtn:$("#shortsBtn"),
     shotKey:$("#shotKey"),shotEnv:$("#shotEnv"),overlayToggle:$("#overlayToggle"),
-    tabWrite:$("#tabWrite"),tabMake:$("#tabMake"),writepane:$("#writepane"),
+    tabWrite:$("#tabWrite"),tabMake:$("#tabMake"),tabSub:$("#tabSub"),writepane:$("#writepane"),subpane:$("#subpane"),
+    subDrop:$("#subDrop"),subFile:$("#subFile"),subFileName:$("#subFileName"),subScriptStatus:$("#subScriptStatus"),
+    subKeepSplit:$("#subKeepSplit"),subFix:$("#subFix"),subResult:$("#subResult"),subResultInfo:$("#subResultInfo"),
+    subOut:$("#subOut"),subCopy:$("#subCopy"),subDownload:$("#subDownload"),
     topic:$("#topic"),genres:$("#genres"),claudeModelSel:$("#claudeModelSel"),
     genScript:$("#genScript"),wpStatus:$("#wpStatus"),wpResult:$("#wpResult"),
     scriptOut:$("#scriptOut"),copyScript:$("#copyScript"),dlScript:$("#dlScript"),useScript:$("#useScript"),
@@ -687,6 +740,84 @@
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
   /* ---------- EXPORT TIMELINE + ASSETS ---------- */
+  /* ---------- 자막 보정 (STT .srt → 대본 문장으로 텍스트 교체, 타임라인 유지) ---------- */
+  // SRT 파싱 → [{index, start, end, text}]
+  function parseSRT(raw){
+    raw=raw.replace(/\r/g,"").replace(/^\uFEFF/,"");
+    const blocks=raw.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
+    const out=[];
+    for(const b of blocks){
+      const lines=b.split("\n");
+      let i=0;
+      if(/^\d+$/.test(lines[0].trim()))i=1;           // 번호 줄
+      const tm=(lines[i]||"").match(/(\d{2}:\d{2}:\d{2}[.,]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[.,]\d{3})/);
+      if(!tm)continue;
+      const text=lines.slice(i+1).join(" ").trim();
+      out.push({start:tm[1].replace(".",","),end:tm[2].replace(".",","),text});
+    }
+    return out;
+  }
+  // 한글/영숫자만 남겨 비교용 정규화
+  function normCh(s){return (s||"").replace(/[^가-힣a-zA-Z0-9]/g,"");}
+  // 대본에서 나레이션만 이어붙인 정확한 텍스트 풀
+  function scriptNarrationPool(){
+    return cuts.filter(c=>c.narr&&!(c.tags||[]).includes("기준")).map(c=>c.narr).join(" ");
+  }
+  // STT 조각들을 대본 글자 흐름에 정렬해 정확한 문장으로 교체
+  function alignSubtitles(sttCues){
+    const pool=scriptNarrationPool();
+    const poolNorm=normCh(pool);
+    // pool의 정규화 인덱스 → 원본 인덱스 매핑
+    const map=[];for(let i=0;i<pool.length;i++){if(/[가-힣a-zA-Z0-9]/.test(pool[i]))map.push(i);}
+    let cursor=0;            // poolNorm에서 현재까지 소비한 위치
+    const result=[];
+    for(let k=0;k<sttCues.length;k++){
+      const cue=sttCues[k];
+      const need=normCh(cue.text).length;
+      if(need===0){result.push({...cue,text:cue.text});continue;}
+      // 이번 조각이 가져갈 정규화 구간: cursor ~ cursor+need (대본 끝 보호)
+      let take=Math.min(need,poolNorm.length-cursor);
+      // 마지막 조각이면 남은 대본 전부
+      if(k===sttCues.length-1)take=poolNorm.length-cursor;
+      if(take<=0){result.push({...cue,text:cue.text});continue;}
+      const startOrig=map[cursor];
+      const endOrig=(cursor+take<map.length)?map[cursor+take]:pool.length;
+      let seg=pool.slice(startOrig,endOrig).trim();
+      // 다음 조각이 문장부호 직후부터 시작하도록 경계 다듬기: seg가 문장 중간에 끊기면 가까운 공백까지
+      result.push({...cue,text:seg||cue.text});
+      cursor+=take;
+    }
+    return result;
+  }
+  function cuesToSRT(cues){
+    return cues.map((c,i)=>(i+1)+"\n"+c.start+" --> "+c.end+"\n"+c.text+"\n").join("\n");
+  }
+  let subSTT=null;   // 업로드된 STT cue 배열
+  function updateSubScriptStatus(){
+    const n=cuts.filter(c=>c.narr&&!(c.tags||[]).includes("기준")).length;
+    if(n)E.subScriptStatus.innerHTML='<span class="ok">✓ 현재 대본 로드됨 ('+n+'개 나레이션 컷). 이 문장들로 교체합니다.</span>';
+    else E.subScriptStatus.innerHTML='<span class="err">대본이 없습니다. 먼저 대본을 불러오세요.</span>';
+    E.subFix.disabled=!(subSTT&&n);
+  }
+  function readSubFile(f){
+    if(!f)return;
+    E.subFileName.textContent=f.name;
+    const r=new FileReader();
+    r.onload=e=>{try{subSTT=parseSRT(e.target.result);E.subFileName.textContent=f.name+" · "+subSTT.length+"개 자막";updateSubScriptStatus();}
+      catch(err){E.subScriptStatus.innerHTML='<span class="err">SRT를 읽지 못했습니다.</span>';}};
+    r.readAsText(f,"utf-8");
+  }
+  function runSubFix(){
+    if(!subSTT||!subSTT.length){showToast("먼저 STT .srt를 올리세요",true);return;}
+    const pool=scriptNarrationPool();
+    if(!normCh(pool)){showToast("대본 나레이션이 없습니다",true);return;}
+    const fixed=alignSubtitles(subSTT);
+    const srt=cuesToSRT(fixed);
+    E.subOut.value=srt;E.subResult.style.display="";
+    E.subResultInfo.textContent="✓ "+fixed.length+"개 자막을 대본 문장으로 교체 (타임라인 유지)";
+    showToast("자막 보정 완료");
+  }
+
   // 자막(.srt) 생성 — 내보내기와 단독 다운로드에서 공용
   function buildSRT(){
     function srtTime(sec){const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=Math.floor(sec%60),ms=Math.round((sec-Math.floor(sec))*1000);
@@ -700,23 +831,32 @@
         .replace(/(은|는|이|가|을|를|에게|에서|으로|로|와|과|까지|부터)\s+/g,"$1\n")
         .replace(/(고|며|면서|지만|는데|니까|라서)\s+/g,"$1\n");
       let parts=marked.split("\n").map(s=>s.trim()).filter(Boolean);
-      // 1차 병합: 너무 긴 건 쪼개고, 너무 짧은 건 앞과 합침
+      // 문장이 끝나는지 판정 (마침표·물음표·느낌표·말줄임표로 끝나면 true)
+      const endsSentence=s=>/[.!?。…]["'”’)\]]?$/.test(s);
+      // 1차 병합: 너무 긴 건 쪼개고, 너무 짧은 건 앞과 합침 (단, 앞 조각이 문장 끝이면 합치지 않음)
       const merged=[];
       for(let part of parts){
         while(part.length>MAX){let cut=part.lastIndexOf(" ",MAX);if(cut<8)cut=MAX;merged.push(part.slice(0,cut).trim());part=part.slice(cut).trim();}
         if(part){
-          if(merged.length&&merged[merged.length-1].length+part.length+1<=MAX&&merged[merged.length-1].length<MERGE)
-            merged[merged.length-1]=(merged[merged.length-1]+" "+part).trim();
+          const prev=merged[merged.length-1];
+          if(prev&&!endsSentence(prev)&&prev.length+part.length+1<=MAX&&prev.length<MERGE)
+            merged[merged.length-1]=(prev+" "+part).trim();
           else merged.push(part);
         }
       }
       parts=merged.length?merged:[text];
-      // 2차: 음성 길이 안에서 조각당 최소 시간이 보장되도록 조각 수 제한
+      // 2차: 음성 길이 안에서 조각당 최소 시간 보장 (문장 경계는 넘어서 합치지 않음)
       const maxChunks=Math.max(1,Math.floor(dur/MIN_PER));
-      while(parts.length>maxChunks){
-        // 가장 짧은 인접 쌍을 찾아 합침 (합쳐도 MAX*1.6 이하면)
-        let bi=0,bl=Infinity;
-        for(let i=0;i<parts.length-1;i++){const l=parts[i].length+parts[i+1].length;if(l<bl){bl=l;bi=i;}}
+      let guard=0;
+      while(parts.length>maxChunks&&guard++<50){
+        // 문장 경계가 아닌 인접 쌍 중 가장 짧은 것을 합침
+        let bi=-1,bl=Infinity;
+        for(let i=0;i<parts.length-1;i++){
+          if(endsSentence(parts[i]))continue;            // 문장 끝 뒤로는 합치지 않음
+          const l=parts[i].length+parts[i+1].length;
+          if(l<bl){bl=l;bi=i;}
+        }
+        if(bi<0)break;                                   // 더 합칠 수 있는 쌍이 없으면 중단(문장 수만큼 자막 유지)
         parts[bi]=(parts[bi]+" "+parts[bi+1]).trim();parts.splice(bi+1,1);
       }
       // 시간 배분: 글자 수 비례, 합은 정확히 dur
@@ -1178,12 +1318,14 @@
     });
   }
   function switchTab(which){
-    const w=which==="write";
-    E.tabWrite.classList.toggle("active",w);E.tabMake.classList.toggle("active",!w);
-    E.writepane.style.display=w?"":"none";
-    // 제작 탭: 이미 대본 로드됐으면 player, 아니면 drop
-    if(!w){const loaded=E.player.classList.contains("on");E.drop.style.display=loaded?"none":"";E.player.style.display=loaded?"flex":"none";}
+    E.tabWrite.classList.toggle("active",which==="write");
+    E.tabMake.classList.toggle("active",which==="make");
+    E.tabSub.classList.toggle("active",which==="sub");
+    E.writepane.style.display=which==="write"?"":"none";
+    E.subpane.style.display=which==="sub"?"":"none";
+    if(which==="make"){const loaded=E.player.classList.contains("on");E.drop.style.display=loaded?"none":"";E.player.style.display=loaded?"flex":"none";}
     else{E.drop.style.display="none";E.player.style.display="none";}
+    if(which==="sub")updateSubScriptStatus();
   }
   async function generateScript(){
     const topic=E.topic.value.trim();
@@ -1312,6 +1454,14 @@
   renderGenres();
   E.tabWrite.addEventListener("click",()=>switchTab("write"));
   E.tabMake.addEventListener("click",()=>switchTab("make"));
+  E.tabSub.addEventListener("click",()=>switchTab("sub"));
+  E.subFile.addEventListener("change",e=>readSubFile(e.target.files[0]));
+  E.subDrop.addEventListener("dragover",e=>{e.preventDefault();E.subDrop.classList.add("over");});
+  E.subDrop.addEventListener("dragleave",()=>E.subDrop.classList.remove("over"));
+  E.subDrop.addEventListener("drop",e=>{e.preventDefault();E.subDrop.classList.remove("over");if(e.dataTransfer.files[0])readSubFile(e.dataTransfer.files[0]);});
+  E.subFix.addEventListener("click",runSubFix);
+  E.subCopy.addEventListener("click",()=>{copyText(E.subOut.value).then(()=>showToast("보정 자막 복사됨"));});
+  E.subDownload.addEventListener("click",()=>{const blob=new Blob([E.subOut.value],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=((project||"자막")+"_보정").replace(/[\/\\:*?\"<>|]/g,"_")+".srt";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);});
   E.claudeModelSel.addEventListener("change",()=>{claudeModel=E.claudeModelSel.value;});
   E.genScript.addEventListener("click",generateScript);
   E.topic.addEventListener("keydown",e=>{if(e.key==="Enter")generateScript();});
